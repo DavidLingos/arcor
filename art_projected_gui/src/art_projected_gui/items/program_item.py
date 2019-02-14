@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 from PyQt4 import QtGui, QtCore
+import rospy
 from item import Item
 from art_msgs.msg import LearningRequestGoal
 from geometry_msgs.msg import Point32, Pose
@@ -97,6 +98,8 @@ class ProgramItem(Item):
                                                image_path=icons_path + "success.svg")
         self.block_on_failure_btn = ButtonItem(self.scene(), 0, 0, "BTN", self, self.block_on_failure_btn_cb,
                                                image_path=icons_path + "failure.svg")
+        self.block_create_btn = ButtonItem(self.scene(), 0, 0, "BTN", self, self.block_create_btn_cb,
+                                               image_path=icons_path + "plus.svg")
 
         # block "view" when in visualization
         self.program_visualize_btn = ButtonItem(self.scene(), 0, 0, translate(
@@ -143,11 +146,11 @@ class ProgramItem(Item):
 
             # hide edit block buttons
             group_visible((self.block_finished_btn, self.block_edit_btn, self.block_on_failure_btn,
-                           self.block_on_success_btn), False)
+                           self.block_on_success_btns, self.block_create_btn), False)
 
         else:
             self._place_childs_horizontally(y, self.sp, [
-                self.block_edit_btn, self.block_on_success_btn, self.block_on_failure_btn, self.block_finished_btn])
+                self.block_edit_btn, self.block_on_success_btn, self.block_on_failure_btn, self.block_finished_btn, self.block_create_btn])
 
             y += self.block_finished_btn._height() + self.sp
 
@@ -169,10 +172,13 @@ class ProgramItem(Item):
         self.item_finished_btn = ButtonItem(self.scene(), 0, 0, "BTN", self, self.item_finished_btn_cb,
                                             image_path=icons_path + "back.svg")
 
+        self.item_create_btn = ButtonItem(self.scene(), 0, 0, "BTN", self, self.item_create_btn_cb,
+                                           image_path=icons_path + "plus.svg")
+
         self.items_list = None
 
         group_visible((self.item_finished_btn, self.item_run_btn,
-                       self.item_on_success_btn, self.item_on_failure_btn, self.item_edit_btn), False)
+                       self.item_on_success_btn, self.item_on_failure_btn, self.item_edit_btn, self.item_create_btn), False)
 
         # readonly (program running) "view"
         self.pr_pause_btn = ButtonItem(self.scene(), 0, 0, "BTN", self, self.pr_pause_btn_cb,
@@ -343,7 +349,7 @@ class ProgramItem(Item):
             self.blocks_list.set_enabled(False, True)
 
             group_visible((self.block_finished_btn,
-                           self.block_edit_btn, self.block_on_failure_btn, self.block_on_success_btn), False)
+                           self.block_edit_btn, self.block_on_failure_btn, self.block_on_success_btn, self.block_create_btn), False)
             group_enable((self.pr_pause_btn, self.pr_cancel_btn), True)
 
         else:
@@ -386,7 +392,8 @@ class ProgramItem(Item):
                            self.block_visualize_btn,
                            self.program_visualize_btn,
                            self.block_back_btn,
-                           self.blocks_list),
+                           self.blocks_list,
+                           self.block_create_btn),
                           False)
 
         else:
@@ -467,7 +474,7 @@ class ProgramItem(Item):
             self.items_map_rev[item_id] = i
 
         self.items_list = ListItem(self.scene(
-        ), 0, 0, 0.2 - 2 * 0.005, idata, self.item_selected_cb, parent=self)
+        ), 0, 0, 0.2 - 2 * 0.005, idata, self.item_selected_cb, self.item_moved_cb, parent=self)
 
         for k, v in self.items_map.iteritems():
 
@@ -493,7 +500,7 @@ class ProgramItem(Item):
             group_enable(pr, True)
 
             group_visible((self.item_finished_btn, self.item_run_btn,
-                           self.item_on_success_btn, self.item_on_failure_btn, self.item_edit_btn), False)
+                           self.item_on_success_btn, self.item_on_failure_btn, self.item_edit_btn, self.item_create_btn), False)
 
             self.show_visualization_buttons(False)
 
@@ -519,13 +526,13 @@ class ProgramItem(Item):
             group_visible((self.pr_pause_btn, self.pr_cancel_btn), False)
 
             group_visible((self.item_run_btn,
-                           self.item_on_success_btn, self.item_on_failure_btn, self.item_edit_btn), False)
+                           self.item_on_success_btn, self.item_on_failure_btn, self.item_edit_btn, self.item_create_btn), False)
 
         # in learning state
         else:
 
             btns = (self.item_edit_btn, self.item_run_btn, self.item_on_success_btn, self.item_on_failure_btn,
-                    self.item_finished_btn)
+                    self.item_finished_btn, self.item_create_btn)
 
             self._place_childs_horizontally(y, self.sp, btns)
             y += max(btn._height() for btn in btns)
@@ -533,7 +540,7 @@ class ProgramItem(Item):
             y += self.sp
 
             group_visible((self.item_finished_btn, self.item_run_btn,
-                           self.item_on_success_btn, self.item_on_failure_btn, self.item_edit_btn), True)
+                           self.item_on_success_btn, self.item_on_failure_btn, self.item_edit_btn, self.item_create_btn), True)
             self.item_finished_btn.setEnabled(True)
             group_enable((self.item_run_btn, self.item_on_failure_btn,
                           self.item_on_success_btn, self.item_on_failure_btn), False)
@@ -552,7 +559,7 @@ class ProgramItem(Item):
 
         group_visible((self.block_finished_btn, self.block_edit_btn,
                        self.item_on_success_btn, self.block_on_failure_btn, self.block_on_success_btn,
-                       self.blocks_list), False)
+                       self.blocks_list, self.block_create_btn), False)
 
         self._init_items_list()
 
@@ -688,6 +695,19 @@ class ProgramItem(Item):
 
         if self.item_switched_cb is not None:
             self.item_switched_cb(*self.cid)
+            
+    def item_moved_cb(self, up = True):
+
+        # print ("self.items_list.selected_item_idx", self.items_list.selected_item_idx)
+
+        if self.items_list.selected_item_idx is not None:
+
+            if up:
+                self.ph.move_item_up(self.block_id, self.items_list.selected_item_idx)
+            
+            else:
+                self.ph.move_item_down(self.block_id, self.items_list.selected_item_idx)
+
 
     def block_on_failure_btn_cb(self, btn):
 
@@ -696,6 +716,10 @@ class ProgramItem(Item):
     def block_on_success_btn_cb(self, btn):
 
         self.set_active(self.ph.get_block_on_success(self.block_id), None)
+
+    def block_create_btn_cb(self, btn):
+
+        return
 
     def block_finished_btn_cb(self, btn):
 
@@ -707,9 +731,9 @@ class ProgramItem(Item):
 
         # go back to blocks view
         group_visible((self.block_finished_btn, self.block_edit_btn,
-                       self.block_on_failure_btn, self.block_on_success_btn, self.blocks_list), True)
+                       self.block_on_failure_btn, self.block_on_success_btn, self.block_create_btn, self.blocks_list), True)
         group_visible((self.item_finished_btn, self.item_run_btn,
-                       self.item_on_success_btn, self.item_on_failure_btn, self.item_edit_btn), False)
+                       self.item_on_success_btn, self.item_on_failure_btn, self.item_edit_btn, self.item_create_btn), False)
         self.block_selected_cb()  # TODO extract method to set buttons to proper state
         self.blocks_list.setEnabled(True)
         self.block_finished_btn.setEnabled(True)
@@ -738,6 +762,10 @@ class ProgramItem(Item):
         self.set_active(*of)
         if self.item_switched_cb is not None:
             self.item_switched_cb(*of)
+
+    def item_create_btn_cb(self, btn):
+
+        return
 
     def item_run_btn_cb(self, btn):
 

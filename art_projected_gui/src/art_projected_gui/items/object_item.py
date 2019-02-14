@@ -156,7 +156,7 @@ class ObjectItem(Item):
             return
 
         desc = ""
-        desc += translate("ObjectItem", "ID: ") + self.object_id
+        desc += translate("ObjectItem", "IDx: ") + self.object_id
 
         if self.hover:
 

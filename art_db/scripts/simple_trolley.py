@@ -56,6 +56,7 @@ def main(args):
     prog.header.id = 2
     prog.header.name = "Trenink - podavac"
 
+
     pb = ProgramBlock()
     pb.id = 1
     pb.name = "Zvedni z podavace a poloz"
@@ -71,7 +72,7 @@ def main(args):
     pb.items.append(wait_item(6, ref_id=[4], on_success=1, on_failure=0))
 
     art.store_program(prog)
-    art.program_set_ro(prog.header.id)
+    #art.program_set_ro(prog.header.id)
 
     # -------------------------------------------------------------------------------------------
     # Training program 3

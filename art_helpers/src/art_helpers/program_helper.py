@@ -1,9 +1,11 @@
 #!/usr/bin/env python
 
 import rospy
-from art_msgs.msg import Program
+from copy import deepcopy
+from art_msgs.msg import Program, ProgramBlock
 from geometry_msgs.msg import Pose, Polygon
 from art_helpers import InstructionsHelper
+from art_utils import ArtApiHelper
 
 
 class ProgramHelperException(Exception):
@@ -25,6 +27,7 @@ class ProgramHelper(object):
         self._prog = None
 
         self.ih = InstructionsHelper()
+        self.art = ArtApiHelper()
 
     def load(self, prog, template=False):
 
@@ -60,10 +63,10 @@ class ProgramHelper(object):
             cache[block.id]["on_failure"] = block.on_failure
             cache[block.id]["items"] = {}
 
-            if len(block.items) == 0:
-
-                rospy.logerr("Block with zero items!")
-                return False
+            # if len(block.items) == 0:
+            #
+            #     # rospy.logerr("Block with zero items!")
+            #     return True
 
             for item_idx in range(0, len(block.items)):
 
@@ -237,6 +240,8 @@ class ProgramHelper(object):
 
     def set_item_msg(self, block_id, msg):
 
+        if len(self._cache[block_id]["items"]) < msg.id:
+            return
         block_idx = self._cache[block_id]["idx"]
         item_idx = self._cache[block_id]["items"][msg.id]["idx"]
 
@@ -289,6 +294,9 @@ class ProgramHelper(object):
     def get_item_type(self, block_id, item_id):
 
         msg = self.get_item_msg(block_id, item_id)
+        if msg is None:
+            return None
+
         return msg.type
 
     def item_requires_learning(self, block_id, item_id):
@@ -508,3 +516,88 @@ class ProgramHelper(object):
                     return False
 
         return True
+
+    def create_empty_program(self):
+        prog = Program()
+        prog.header.id = self.get_new_program_id()
+        prog.header.name = "Program " + str(prog.header.id)
+
+        pb = ProgramBlock()
+        pb.id = 1
+        pb.name = "Program block 1"
+        pb.on_success = 1
+        pb.on_failure = 0
+        prog.blocks.append(pb)
+
+        if self.art.store_program(prog):
+            return prog
+        else:
+            return None
+
+    def get_new_program_id(self):
+        return 10
+        
+    def join_blocks(self, block_id1, block_id2):
+        block_idx1 = self._get_block_on(block_id1, "idx")
+        block_idx2 = self._get_block_on(block_id2, "idx")
+        self._prog.blocks[block_idx1].items += self._prog.blocks[block_idx2].items
+        del self._prog.blocks[block_idx2]
+        
+    def split_instructions(self, block_id, item_id1, item_id2):
+        block_idx = self._cache[block_id]["idx"]
+        item_idx1 = self._cache[block_id]["items"][item_id1]["idx"]
+        item_idx2 = self._cache[block_id]["items"][item_id2]["idx"]
+        if item_idx2 < item_idx1:
+            item_idx1, item_idx2 = item_idx2, item_idx1
+        block = self._prog.blocks[block_idx]         
+        new_block = deepcopy(block)   
+        new_block.items = deepcopy(block.items[item_idx2:])
+        new_block.id = max(self.get_block_ids()) + 1
+        del block.items[item_idx2:]
+        self._prog.blocks.insert(block_idx+1, new_block)
+        
+    def move_item_down(self, block_id, item_idx):
+        block_idx = self._cache[block_id]["idx"]
+        
+        if len(self._prog.blocks[block_idx].items) > item_idx + 1:
+            
+            self._prog.blocks[block_idx].items[item_idx], self._prog.blocks[block_idx].items[item_idx+1] = \
+                self._prog.blocks[block_idx].items[item_idx + 1], self._prog.blocks[block_idx].items[item_idx]
+            
+            self.art.store_program(self._prog)
+
+    def move_item_up(self, block_id, item_idx):
+        block_idx = self._cache[block_id]["idx"]
+        
+        if item_idx > 0:
+            
+            self._prog.blocks[block_idx].items[item_idx], self._prog.blocks[block_idx].items[item_idx - 1] = \
+                self._prog.blocks[block_idx].items[item_idx - 1], self._prog.blocks[block_idx].items[item_idx]
+                
+            self.art.store_program(self._prog)
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    

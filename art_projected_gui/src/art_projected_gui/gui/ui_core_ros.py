@@ -79,9 +79,11 @@ class UICoreRos(UICore):
             'learning_request_done_evt'), self.learning_request_done_evt)
 
         self.program_list = None
+        self.program_build = None
         self.program_vis = None
         self.template = False  # TODO this should be stored in program_vis?
         self.program_widget_pos = array_from_param("program_widget_pos", float, 2, [0.2, self.height - 0.2])
+        self.program_build_widget_pos = array_from_param("program_build_widget_pos", float, 2, [0.2, self.height - 0.2])
         self.last_edited_prog_id = None
 
         self.ph = ProgramHelper()
@@ -432,6 +434,7 @@ class UICoreRos(UICore):
             item_switched_cb = self.active_item_switched_for_visualization
 
         rospy.logdebug("Showing ProgramItem with readonly=" + str(readonly) + ", stopped=" + str(stopped))
+
         self.program_vis = ProgramItem(
             self.scene,
             self.program_widget_pos[0],
@@ -959,7 +962,7 @@ class UICoreRos(UICore):
         self.hololens_connected = True
         # self.hololens_connected = msg.data
 
-    def program_selected_cb(self, prog_id, run=False, template=False, visualize=False):
+    def program_selected_cb(self, prog_id, run=False, template=False, visualize=False, create=False):
 
         self.template = template
 
@@ -1009,6 +1012,24 @@ class UICoreRos(UICore):
                 self.notif(
                     translate("UICoreRos", "Failed to contact HoloLens device."), message_type=NotifyUserRequest.ERROR)
                 return
+                
+        elif create:
+
+            program = self.ph.create_empty_program()
+            if program is not None:
+                print "Program saved!"
+                if not self.ph.load(self.art.load_program(program.header.id), template):
+
+                    self.notif(
+                        translate(
+                            "UICoreRos",
+                            "Failed to load program from database." + program.header.id),
+                        message_type=NotifyUserRequest.ERROR)
+
+                # TODO what to do?
+                return
+            
+            return
 
         else:
 
@@ -1191,9 +1212,9 @@ class UICoreRos(UICore):
                         self.object_selected)
                     # self.notif(translate("UICoreRos", "New object") + " ID=" + str(inst.object_id), temp=True)
 
-                else:
-
-                    rospy.logerr("Failed to get object type (" + inst.object_type + ") for ID=" + str(inst.object_id))
+#                else:
+                    
+                    #rospy.logerr("Failed to get object type (" + inst.object_type + ") for ID=" + str(inst.object_id))
 
         if self.current_instruction:
             self.current_instruction.detected_objects(msg)
