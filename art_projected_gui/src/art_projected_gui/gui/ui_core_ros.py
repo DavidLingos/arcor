@@ -85,6 +85,7 @@ class UICoreRos(UICore):
         self.program_widget_pos = array_from_param("program_widget_pos", float, 2, [0.2, self.height - 0.2])
         self.program_build_widget_pos = array_from_param("program_build_widget_pos", float, 2, [0.2, self.height - 0.2])
         self.last_edited_prog_id = None
+        self.learning_service_started = False
 
         self.ph = ProgramHelper()
 
@@ -444,6 +445,7 @@ class UICoreRos(UICore):
             self.ih,
             done_cb=self.learning_done_cb,
             item_switched_cb=item_switched_cb,
+            item_added_cb=self.item_added_cb,
             learning_request_cb=self.learning_request_cb,
             stopped=stopped,
             pause_cb=self.pause_cb,
@@ -931,7 +933,39 @@ class UICoreRos(UICore):
 
         return self.template
 
+    def try_start_learning_service(self):
+        req = ProgramIdTriggerRequest()
+        req.program_id = self.ph.get_program_id()
+        resp = None
+
+        try:
+            resp = self.start_learning_srv(req)
+        except rospy.ServiceException as e:
+            print
+            "Service call failed: %s" % e
+
+        if resp is None or not resp.success:
+
+            self.notif(
+                translate("UICoreRos", "Failed to start edit mode."), message_type=NotifyUserRequest.ERROR)
+
+        else:
+            self.learning_service_started = True
+
+    def item_added_cb(self):
+
+        if not self.learning_service_started:
+
+            self.try_start_learning_service()
+
+            return
+
     def learning_done_cb(self):
+
+        if not self.learning_service_started:
+            self.program_list.set_enabled(True, True)
+            self.program_vis.set_enabled(False, True)
+            return
 
         prog = self.ph.get_program()
 
@@ -957,12 +991,18 @@ class UICoreRos(UICore):
             rospy.logwarn("Failed to stop learning mode.")
             return
 
+        else:
+
+            self.learning_service_started = False
+
     def hololens_active_cb(self, msg):
         # temporarily set by default to true to avoid rosbridge crashing
         self.hololens_connected = True
         # self.hololens_connected = msg.data
 
-    def program_selected_cb(self, prog_id, run=False, template=False, visualize=False, create=False):
+    def program_selected_cb(self, prog_id, run=False,
+                            template=False, visualize=False,
+                            create=False, delete=False):
 
         self.template = template
 
@@ -1012,12 +1052,12 @@ class UICoreRos(UICore):
                 self.notif(
                     translate("UICoreRos", "Failed to contact HoloLens device."), message_type=NotifyUserRequest.ERROR)
                 return
-                
+
         elif create:
 
             program = self.ph.create_empty_program()
             if program is not None:
-                print "Program saved!"
+                print "Program created!"
                 if not self.ph.load(self.art.load_program(program.header.id), template):
 
                     self.notif(
@@ -1026,9 +1066,22 @@ class UICoreRos(UICore):
                             "Failed to load program from database." + program.header.id),
                         message_type=NotifyUserRequest.ERROR)
 
+                # reload list
+
+                self.scene.removeItem(self.program_list)
+                self.show_program_list(program.header.id)
                 # TODO what to do?
                 return
-            
+
+            return
+
+        elif delete:
+
+            self.ph.delete_program(prog_id)
+
+            self.scene.removeItem(self.program_list)
+            self.show_program_list()
+
             return
 
         else:
@@ -1069,18 +1122,14 @@ class UICoreRos(UICore):
 
                 rospy.loginfo("Program ID=" + str(prog_id) + " templated as ID=" + str(prog.header.id))
 
-            req = ProgramIdTriggerRequest()
-            req.program_id = self.ph.get_program_id()
-            resp = None
-            try:
-                resp = self.start_learning_srv(req)
-            except rospy.ServiceException as e:
-                print "Service call failed: %s" % e
+            if not self.ph.is_empty():
 
-            if resp is None or not resp.success:
+                self.try_start_learning_service()
 
-                self.notif(
-                    translate("UICoreRos", "Failed to start edit mode."), message_type=NotifyUserRequest.ERROR)
+            else:
+
+                self.program_list.set_enabled(False, True)
+                self.show_program_vis()
 
             # else:
                 # self.clear_all()
@@ -1120,7 +1169,7 @@ class UICoreRos(UICore):
 
         self.emit(QtCore.SIGNAL('learning_request_done_evt'), status, result)
 
-    def show_program_list(self):
+    def show_program_list(self, selected_program_id=None):
 
         self.notif(translate("UICoreRos", "Please select a program"))
 
@@ -1146,7 +1195,8 @@ class UICoreRos(UICore):
             self.program_widget_pos[1],
             headers_to_show,
             d,
-            self.last_edited_prog_id,
+            selected_program_id if selected_program_id is not None
+            else self.last_edited_prog_id,
             self.program_selected_cb,
             self.program_selection_changed_cb)
 
@@ -1213,7 +1263,7 @@ class UICoreRos(UICore):
                     # self.notif(translate("UICoreRos", "New object") + " ID=" + str(inst.object_id), temp=True)
 
 #                else:
-                    
+
                     #rospy.logerr("Failed to get object type (" + inst.object_type + ") for ID=" + str(inst.object_id))
 
         if self.current_instruction:

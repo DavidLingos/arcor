@@ -30,7 +30,7 @@ class ProgramListItem(Item):
         self.learned_dict = learned_dict
         self.program_selected_cb = program_selected_cb
         self.program_selection_changed_cb = program_selection_changed_cb
-        
+
         super(ProgramListItem, self).__init__(scene, x, y)
 
         self.w = self.m2pix(0.2)
@@ -73,14 +73,16 @@ class ProgramListItem(Item):
         self.visualize_btn = ButtonItem(scene, 0, 0, "BTN", self, self.visualize_btn_cb,
                                         image_path=icons_path + "visualize.svg")
         self.create_btn = ButtonItem(scene, 0, 0, "BTN", self, self.create_btn_cb,
-                                       image_path=icons_path + "plus.svg")                    
-        
+                                     image_path=icons_path + "plus.svg")
+        self.delete_btn = ButtonItem(scene, 0, 0, "BTN", self, self.delete_btn_cb,
+                                     image_path=icons_path + "delete.svg")
 
         self.run_btn.set_enabled(False)
         self.edit_btn.set_enabled(False)
         self.template_btn.set_enabled(False)
         self.visualize_btn.set_enabled(False)
         self.create_btn.set_enabled(True)
+        self.delete_btn.set_enabled(False)
 
         if selected_program_id is not None:
 
@@ -94,7 +96,8 @@ class ProgramListItem(Item):
         h += self.list._height()
         h += 2 * sp
 
-        btns = (self.run_btn, self.edit_btn, self.template_btn, self.visualize_btn, self.create_btn)
+        btns = (self.run_btn, self.edit_btn, self.template_btn,
+                self.visualize_btn, self.create_btn, self.delete_btn)
 
         self._place_childs_horizontally(h, sp, btns)
         h += self.run_btn._height()
@@ -116,6 +119,7 @@ class ProgramListItem(Item):
             self.edit_btn.set_enabled(False)
             self.template_btn.set_enabled(False)
             self.visualize_btn.set_enabled(False)
+            self.delete_btn.set_enabled(False)
 
             if self.program_selection_changed_cb:
                 self.program_selection_changed_cb(None)
@@ -134,6 +138,7 @@ class ProgramListItem(Item):
 
             self.template_btn.set_enabled(True)
             self.visualize_btn.set_enabled(True)
+            self.delete_btn.set_enabled(True)
 
             if self.program_selection_changed_cb:
                 self.program_selection_changed_cb(ph.id, ro=ph.readonly, learned=self.learned_dict[ph.id])
@@ -161,11 +166,16 @@ class ProgramListItem(Item):
 
         if self.program_selected_cb is not None:
             self.program_selected_cb(self.get_current_header().id, template=True)
-            
+
     def create_btn_cb(self, btn):
-        
+
         if self.program_selected_cb is not None:
-            self.program_selected_cb(0, create=True)        
+            self.program_selected_cb(0, create=True)
+
+    def delete_btn_cb(self, btn):
+
+        if self.program_selected_cb is not None:
+            self.program_selected_cb(self.get_current_header().id, delete=True)
 
     def boundingRect(self):
 

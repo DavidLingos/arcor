@@ -14,7 +14,7 @@ icons_path = rospack.get_path('art_projected_gui') + '/icons/'
 
 class ListItem(Item):
 
-    def __init__(self, scene, x, y, w, data, item_selected_cb=None, item_moved_cb = None, parent=None):
+    def __init__(self, scene, x, y, w, data, item_selected_cb=None, item_moved_cb=None, parent=None):
 
         self.w = 100
         self.h = 100
@@ -145,20 +145,20 @@ class ListItem(Item):
 
         if self.isEnabled():
 
-            if self.item_moved_cb is None or self.selected_item_idx is None:
-                self.up_btn.set_enabled(min(displayed) > 0)
-                self.down_btn.set_enabled(max(displayed) < len(self.items) - 1)
-            
-            else:               
-                
+            if None not in (self.item_moved_cb, self.selected_item_idx):
+
                 self.up_btn.set_enabled(self.selected_item_idx > 0)
                 self.down_btn.set_enabled(self.selected_item_idx < len(self.items) - 1)
+
+            else:
+                self.up_btn.set_enabled(min(displayed) > 0)
+                self.down_btn.set_enabled(max(displayed) < len(self.items) - 1)
 
     def up_btn_cb(self, btn):
 
         if self.middle_item_idx > 0:
             self.set_current_idx(self.middle_item_idx - 1)
-        
+
         if self.item_moved_cb is not None:
             self.item_moved_cb()
 
@@ -166,9 +166,9 @@ class ListItem(Item):
 
         if self.middle_item_idx < len(self.items) - 1:
             self.set_current_idx(self.middle_item_idx + 1)
-            
+
         if self.item_moved_cb is not None:
-            self.item_moved_cb(up = False)
+            self.item_moved_cb(up=False)
 
     def boundingRect(self):
 

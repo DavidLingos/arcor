@@ -6,6 +6,7 @@ from art_msgs.msg import Program, ProgramBlock
 from geometry_msgs.msg import Pose, Polygon
 from art_helpers import InstructionsHelper
 from art_utils import ArtApiHelper
+from art_utils.art_msgs_functions import wait_item
 
 
 class ProgramHelperException(Exception):
@@ -517,6 +518,16 @@ class ProgramHelper(object):
 
         return True
 
+    def is_empty(self):
+
+        for block_idx in range(0, len(self._prog.blocks)):
+
+            block = self._prog.blocks[block_idx]
+            if len(self._cache[block.id]["items"]) > 0:
+                return False
+
+        return True
+
     def create_empty_program(self):
         prog = Program()
         prog.header.id = self.get_new_program_id()
@@ -534,70 +545,100 @@ class ProgramHelper(object):
         else:
             return None
 
+    def delete_program(self, program_id=None):
+
+        if(program_id is None):
+            self.art.delete_program(self._prog.header.id)
+        else:
+            self.art.delete_program(program_id)
+
     def get_new_program_id(self):
-        return 10
-        
+
+        headers = self.art.get_program_headers()
+
+        return max(headers, key=lambda x: x.id).id + 1
+
+    def add_block(self):
+
+        pb = ProgramBlock()
+        pb.id = len(self._prog.blocks) + 1
+        pb.name = "Program block " + str(pb.id)
+        pb.on_success = 1
+        pb.on_failure = 0
+
+        self._prog.blocks.append(pb)
+
+        self.art.store_program(self._prog)
+        self.load(self._prog)
+
+    def delete_block(self, block_id):
+
+        block_idx = self._get_block_on(block_id, "idx")
+
+        del self._prog.blocks[block_idx]
+
+        self.art.store_program(self._prog)
+        self.load(self._prog)
+
+    def add_item(self, block_id, instruction_name):
+
+        block_idx = self._get_block_on(block_id, "idx")
+
+        block = self._prog.blocks[block_idx]
+        block.items.append(
+            self.ih.get_instruction_msgs(instruction_name, len(block.items) + 1, len(block.items))
+        )
+
+        self.art.store_program(self._prog)
+        self.load(self._prog)
+
+    def delete_item(self, block_id, item_id):
+
+        rospy.logdebug("DELETING")
+
+        block_idx = self._get_block_on(block_id, "idx")
+        block, item_idx = self._get_item_on(block_id, item_id, "idx")
+
+        del self._prog.blocks[block_idx].items[item_idx]
+
+        self.art.store_program(self._prog)
+        self.load(self._prog)
+
     def join_blocks(self, block_id1, block_id2):
         block_idx1 = self._get_block_on(block_id1, "idx")
         block_idx2 = self._get_block_on(block_id2, "idx")
         self._prog.blocks[block_idx1].items += self._prog.blocks[block_idx2].items
         del self._prog.blocks[block_idx2]
-        
+
     def split_instructions(self, block_id, item_id1, item_id2):
         block_idx = self._cache[block_id]["idx"]
         item_idx1 = self._cache[block_id]["items"][item_id1]["idx"]
         item_idx2 = self._cache[block_id]["items"][item_id2]["idx"]
         if item_idx2 < item_idx1:
             item_idx1, item_idx2 = item_idx2, item_idx1
-        block = self._prog.blocks[block_idx]         
-        new_block = deepcopy(block)   
+        block = self._prog.blocks[block_idx]
+        new_block = deepcopy(block)
         new_block.items = deepcopy(block.items[item_idx2:])
         new_block.id = max(self.get_block_ids()) + 1
         del block.items[item_idx2:]
-        self._prog.blocks.insert(block_idx+1, new_block)
-        
+        self._prog.blocks.insert(block_idx + 1, new_block)
+
     def move_item_down(self, block_id, item_idx):
         block_idx = self._cache[block_id]["idx"]
-        
+
         if len(self._prog.blocks[block_idx].items) > item_idx + 1:
-            
-            self._prog.blocks[block_idx].items[item_idx], self._prog.blocks[block_idx].items[item_idx+1] = \
+
+            self._prog.blocks[block_idx].items[item_idx], self._prog.blocks[block_idx].items[item_idx + 1] = \
                 self._prog.blocks[block_idx].items[item_idx + 1], self._prog.blocks[block_idx].items[item_idx]
-            
+
             self.art.store_program(self._prog)
 
     def move_item_up(self, block_id, item_idx):
         block_idx = self._cache[block_id]["idx"]
-        
+
         if item_idx > 0:
-            
+
             self._prog.blocks[block_idx].items[item_idx], self._prog.blocks[block_idx].items[item_idx - 1] = \
                 self._prog.blocks[block_idx].items[item_idx - 1], self._prog.blocks[block_idx].items[item_idx]
-                
+
             self.art.store_program(self._prog)
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
