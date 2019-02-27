@@ -188,24 +188,21 @@ class InstructionsHelper(object):
 
         return ins in self.properties.using_object | self.properties.using_polygon | self.properties.using_pose
 
-    @staticmethod
-    def get_instruction_msgs(item_type, it_id,
-                             on_success=0, on_failure=0, obj_type="", ref_id=[],
+    def get_instruction_msgs(self, instruction_name, it_id,
+                             on_success=None, on_failure=0, obj_type="", ref_id=[],
                              name="", objects=2, holes=2):
 
-        if item_type == "PickFromPolygon":
+        if instruction_name == "PickFromPolygon":
             return polygon_item(it_id, on_success, on_failure, obj_type, ref_id)
-        elif item_type == "PickFromFeeder":
+        elif instruction_name == "PickFromFeeder":
             return feeder_item(it_id, on_success, on_failure, obj_type, ref_id)
-        elif item_type == "VisualInspection":
+        elif instruction_name == "VisualInspection":
             return visual_inspection_item(it_id, ref_id, on_success, on_failure)
-        elif item_type == "PlaceToPose":
+        elif instruction_name == "PlaceToPose":
             return place_item(it_id, ref_id, on_success, on_failure, name)
-        elif item_type == "PlaceToGrid":
+        elif instruction_name == "PlaceToGrid":
             return grid_item(it_id, ref_id, on_success, on_failure, objects)
-        elif item_type == "DrillPoints":
+        elif instruction_name == "DrillPoints":
             return drill_item(it_id, ref_id, on_success, on_failure, holes, obj_type)
-        elif item_type == "WaitUntilUserFinishes":
-            return wait_item(it_id, ref_id, on_success, on_failure)
         else:
-            return item(it_id, item_type, on_success, on_failure, ref_id)
+            return wait_item(it_id, ref_id, on_success, on_failure)
