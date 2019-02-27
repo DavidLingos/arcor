@@ -113,38 +113,15 @@ class ProgramItem(Item):
         self.block_back_btn = ButtonItem(self.scene(), 0, 0, translate(
             "ProgramItem", "Back"), self, self.block_back_btn_cb)
 
-        y = self._init_blocks_list()
-
-        # init instruction selection
-
-        self.instruction_id = None
-
         self.instruction_confirm_btn = ButtonItem(self.scene(), 0, 0, "BTN", self, self.instruction_confirm_btn_cb,
                                                   image_path=icons_path + "plus.svg")
 
         self.instruction_back_btn = ButtonItem(self.scene(), 0, 0, "BTN", self, self.instruction_back_btn_cb,
                                                image_path=icons_path + "back.svg")
 
-        idata = []
+        group_visible((self.instruction_back_btn, self.instruction_confirm_btn), False)
 
-        self.known_instructions = self.ih.known_instructions()
-
-        for i in range(len(self.known_instructions)):
-
-            idata.append(translate("ProgramItem", "Instruction %1\n").arg(self.known_instructions[i]))
-
-        self.instruction_list = ListItem(self.scene(), 0, 0, 0.2 - 2 * 0.005, idata,
-                                         self.instruction_selected_cb, parent=self)
-        y_instructions = self.title.mapToParent(self.title.boundingRect().bottomLeft()).y()
-        self.instruction_list.setPos(self.sp, y_instructions)
-        y_instructions += self.instruction_list._height() + self.sp
-
-        self._place_childs_horizontally(y_instructions, self.sp, [
-            self.instruction_back_btn, self.instruction_confirm_btn
-        ])
-
-        group_visible((self.instruction_confirm_btn, self.instruction_back_btn), False)
-        self.instruction_list.setVisible(False)
+        y = self._init_blocks_list()
 
         if visualize:
             self._place_childs_horizontally(y, self.sp, [
@@ -236,6 +213,9 @@ class ProgramItem(Item):
 
         self._update_learned()
         self.update()
+
+        view = self.scene().views()[0]
+        # view.mousePressEvent = self.scene_clicked_evt
 
         if self.item_switched_cb:
             self.item_switched_cb(None, None, blocks=True)
@@ -600,6 +580,32 @@ class ProgramItem(Item):
         if self.item_switched_cb:
             self.item_switched_cb(self.block_id, self.item_id, blocks=False)
 
+    def _init_instructions_list(self):
+
+        # init instruction selection
+
+        self.instruction_id = None
+
+        idata = []
+
+        self.new_item_map = self.ph.get_allowed_new_items(self.block_id, self.item_id)
+
+        for i in range(len(self.new_item_map)):
+            idata.append(translate("ProgramItem", "Instruction %1\n").arg(self.new_item_map[i]))
+
+        self.instruction_list = ListItem(self.scene(), 0, 0, 0.2 - 2 * 0.005, idata,
+                                         self.instruction_selected_cb, parent=self)
+        y_instructions = self.title.mapToParent(self.title.boundingRect().bottomLeft()).y()
+        self.instruction_list.setPos(self.sp, y_instructions)
+        y_instructions += self.instruction_list._height() + self.sp
+
+        self._place_childs_horizontally(y_instructions, self.sp, [
+            self.instruction_back_btn, self.instruction_confirm_btn
+        ])
+
+        group_visible((self.instruction_confirm_btn, self.instruction_back_btn), True)
+        self.instruction_back_btn.set_enabled(True)
+
     def block_edit_btn_cb(self, btn):
 
         group_visible((self.block_finished_btn, self.block_edit_btn,
@@ -653,7 +659,12 @@ class ProgramItem(Item):
             self.block_visualize_btn.set_enabled(True)
 
             if len(self.blocks_list.items) > 1:
+
                 self.block_delete_btn.set_enabled(True)
+
+            else:
+
+                self.block_delete_btn.set_enabled(False)
 
             if self.item_switched_cb:
 
@@ -763,6 +774,9 @@ class ProgramItem(Item):
             else:
                 self.ph.move_item_down(self.block_id, self.items_list.selected_item_idx)
 
+            self.scene().removeItem(self.items_list)
+            self._init_items_list()
+
     def block_on_failure_btn_cb(self, btn):
 
         self.set_active(self.ph.get_block_on_failure(self.block_id), None)
@@ -773,7 +787,7 @@ class ProgramItem(Item):
 
     def block_create_btn_cb(self, btn):
 
-        self.ph.add_block()
+        self.ph.add_block(self.block_id)
 
         self.scene().removeItem(self.blocks_list)
 
@@ -788,6 +802,8 @@ class ProgramItem(Item):
         self.scene().removeItem(self.blocks_list)
 
         self._init_blocks_list()
+
+        self.block_id = None
 
         return
 
@@ -813,6 +829,7 @@ class ProgramItem(Item):
         self.block_selected_cb()  # TODO extract method to set buttons to proper state
         self.blocks_list.setEnabled(True)
         self.block_finished_btn.setEnabled(True)
+        self.block_create_btn.setEnabled(True)
 
         self.scene().removeItem(self.items_list)
         self.items_list = None
@@ -842,7 +859,7 @@ class ProgramItem(Item):
     def item_create_btn_cb(self, btn):
 
         self.items_list.setVisible(False)
-        self.instruction_list.setVisible(True)
+        self._init_instructions_list()
 
         self.instruction_confirm_btn.setVisible(True)
         self.instruction_back_btn.set_enabled(True, True)
@@ -857,7 +874,9 @@ class ProgramItem(Item):
 
         self.ph.delete_item(self.block_id, self.item_id)
 
-        self.scene.removeItem(self.items_list)
+        self.item_id = None
+
+        self.scene().removeItem(self.items_list)
         self._init_items_list()
 
         return
@@ -867,7 +886,7 @@ class ProgramItem(Item):
         rospy.logdebug(self.instruction_id)
         if self.instruction_id is not None:
 
-            self.ph.add_item(self.block_id, self.instruction_id)
+            self.ph.add_item(self.block_id, self.instruction_id, self.item_id)
 
         self.instruction_back_btn_cb(btn)
         self.scene().removeItem(self.items_list)
@@ -878,7 +897,7 @@ class ProgramItem(Item):
     def instruction_back_btn_cb(self, btn):
 
         self.items_list.setVisible(True)
-        self.instruction_list.setVisible(False)
+        self.scene().removeItem(self.instruction_list)
 
         group_visible((self.instruction_confirm_btn, self.instruction_back_btn),
                       False)
@@ -896,7 +915,7 @@ class ProgramItem(Item):
 
         if self.instruction_list.selected_item_idx is not None:
 
-            self.instruction_id = self.known_instructions[self.instruction_list.selected_item_idx]
+            self.instruction_id = self.new_item_map[self.instruction_list.selected_item_idx]
             self.instruction_confirm_btn.set_enabled(True)
 
         else:
@@ -1103,6 +1122,14 @@ class ProgramItem(Item):
                 self.get_text_for_item(block_id, item_id))
 
         self._update_block(block_id)
+
+    def scene_clicked_evt(self, evt):
+
+        rospy.logdebug('CLICKED')
+        view = self.scene().views()[0]
+        if self.items_list is not None:
+            if view.itemAt(evt.x(), evt.y()) is None:
+                rospy.logdebug('SCENE CLICKED')
 
     def get_current_item(self):
 
