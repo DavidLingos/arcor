@@ -497,8 +497,8 @@ class UICoreRos(UICore):
 
         else:
 
-            rospy.logdebug("Attempt to pause/resume program in strange state: " +
-                           str(self.state_manager.state.system_state))
+            rospy.logdebug("Attempt to pause/resume program in strange state: "
+                           + str(self.state_manager.state.system_state))
             return False
 
     def cancel_cb(self):
@@ -771,6 +771,9 @@ class UICoreRos(UICore):
                 # there may be unsaved changes - let's use ProgramItem from brain
                 self.ph.set_item_msg(state.block_id, state.program_current_item)
 
+            if not self.ph.is_empty():
+                self.learning_service_started = True
+
             self.show_program_vis()
 
         if state.block_id == 0 or state.program_current_item.id == 0:
@@ -831,8 +834,8 @@ class UICoreRos(UICore):
 
     def active_item_switched(self, block_id, item_id, read_only=True, blocks=False):
 
-        rospy.logdebug("Program ID:" + str(self.ph.get_program_id()) + ", active item ID: " +
-                       str((block_id, item_id)) + ", blocks: " + str(blocks) + ", ro: " + str(read_only))
+        rospy.logdebug("Program ID:" + str(self.ph.get_program_id()) + ", active item ID: "
+                       + str((block_id, item_id)) + ", blocks: " + str(blocks) + ", ro: " + str(read_only))
 
         if blocks:
 
@@ -887,8 +890,8 @@ class UICoreRos(UICore):
 
     def active_item_switched_for_visualization(self, block_id, item_id, read_only=True, blocks=False):
         """For HoloLens visualization. Called when clicked on specific block."""
-        rospy.logdebug("Program ID:" + str(self.ph.get_program_id()) + ", active item ID: " +
-                       str((block_id, item_id)) + ", blocks: " + str(blocks) + ", ro: " + str(read_only))
+        rospy.logdebug("Program ID:" + str(self.ph.get_program_id()) + ", active item ID: "
+                       + str((block_id, item_id)) + ", blocks: " + str(blocks) + ", ro: " + str(read_only))
 
         # self.clear_all()
 
@@ -937,7 +940,6 @@ class UICoreRos(UICore):
         req = ProgramIdTriggerRequest()
         req.program_id = self.ph.get_program_id()
         resp = None
-
         try:
             resp = self.start_learning_srv(req)
         except rospy.ServiceException as e:
@@ -950,6 +952,7 @@ class UICoreRos(UICore):
                 translate("UICoreRos", "Failed to start edit mode."), message_type=NotifyUserRequest.ERROR)
 
         else:
+
             self.learning_service_started = True
 
     def item_added_cb(self):
@@ -962,9 +965,20 @@ class UICoreRos(UICore):
 
     def learning_done_cb(self):
 
+        rospy.logdebug(self.learning_service_started)
+
         if not self.learning_service_started:
-            self.program_list.set_enabled(True, True)
-            self.program_vis.set_enabled(False, True)
+
+            if self.program_list is not None:
+                self.program_list.set_enabled(True, True)
+
+            if self.program_vis is not None:
+                self.program_vis.set_enabled(False, True)
+
+            if None in (self.program_vis, self.program_list):
+
+                self.show_program_list()
+
             return
 
         prog = self.ph.get_program()
@@ -975,8 +989,8 @@ class UICoreRos(UICore):
                 translate("UICoreRos", "Failed to store program"), temp=True, message_type=NotifyUserRequest.ERROR)
             # TODO what to do?
 
-        self.notif(translate("UICoreRos", "Program stored with ID=") +
-                   str(prog.header.id), temp=True)
+        self.notif(translate("UICoreRos", "Program stored with ID=")
+                   + str(prog.header.id), temp=True)
 
         self.last_edited_prog_id = prog.header.id
 
@@ -1080,6 +1094,7 @@ class UICoreRos(UICore):
             self.ph.delete_program(prog_id)
 
             self.scene.removeItem(self.program_list)
+            self.last_edited_prog_id = None
             self.show_program_list()
 
             return
@@ -1291,6 +1306,7 @@ class UICoreRos(UICore):
     def object_selected(self, id, selected):
 
         if self.program_vis is None or not self.program_vis.editing_item:
+
             rospy.logdebug("not in edit mode")
             return False
 
