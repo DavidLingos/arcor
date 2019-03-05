@@ -8,6 +8,7 @@ from geometry_msgs.msg import Point32, Pose
 from button_item import ButtonItem
 from art_projected_gui.helpers import conversions
 from list_item import ListItem
+from select_instruction_item import SelectInstructionItem
 from art_projected_gui.helpers.items import group_enable, group_visible
 from geometry_msgs.msg import PoseStamped
 from desc_item import DescItem
@@ -113,14 +114,7 @@ class ProgramItem(Item):
         self.block_back_btn = ButtonItem(self.scene(), 0, 0, translate(
             "ProgramItem", "Back"), self, self.block_back_btn_cb)
 
-        self.instruction_confirm_btn = ButtonItem(self.scene(), 0, 0, "BTN", self, self.instruction_confirm_btn_cb,
-                                                  image_path=icons_path + "plus.svg")
-
-        self.instruction_back_btn = ButtonItem(self.scene(), 0, 0, "BTN", self, self.instruction_back_btn_cb,
-                                               image_path=icons_path + "back.svg")
-
-        group_visible((self.instruction_back_btn, self.instruction_confirm_btn), False)
-
+        self.select_instruction = SelectInstructionItem(scene, x, y, self.ph, None, self.instruction_selected_cb)
         y = self._init_blocks_list()
 
         if visualize:
@@ -580,31 +574,17 @@ class ProgramItem(Item):
         if self.item_switched_cb:
             self.item_switched_cb(self.block_id, self.item_id, blocks=False)
 
+    def _reinit_items_list(self):
+
+        self.scene().removeItem(self.items_list)
+        self._init_items_list()
+
     def _init_instructions_list(self):
 
         # init instruction selection
 
-        self.instruction_id = None
-
-        idata = []
-
-        self.new_item_map = self.ph.get_allowed_new_items(self.block_id, self.item_id)
-
-        for i in range(len(self.new_item_map)):
-            idata.append(translate("ProgramItem", "Instruction %1\n").arg(self.new_item_map[i]))
-
-        self.instruction_list = ListItem(self.scene(), 0, 0, 0.2 - 2 * 0.005, idata,
-                                         self.instruction_selected_cb, parent=self)
-        y_instructions = self.title.mapToParent(self.title.boundingRect().bottomLeft()).y()
-        self.instruction_list.setPos(self.sp, y_instructions)
-        y_instructions += self.instruction_list._height() + self.sp
-
-        self._place_childs_horizontally(y_instructions, self.sp, [
-            self.instruction_back_btn, self.instruction_confirm_btn
-        ])
-
-        group_visible((self.instruction_confirm_btn, self.instruction_back_btn), True)
-        self.instruction_back_btn.set_enabled(True)
+        y = self.title.mapToParent(self.title.boundingRect().bottomLeft()).y()
+        self.select_instruction.init(y, self.block_id, self.item_id)
 
     def block_edit_btn_cb(self, btn):
 
@@ -858,16 +838,8 @@ class ProgramItem(Item):
 
     def item_create_btn_cb(self, btn):
 
-        self.items_list.setVisible(False)
+        self.setVisible(False)
         self._init_instructions_list()
-
-        self.instruction_confirm_btn.setVisible(True)
-        self.instruction_back_btn.set_enabled(True, True)
-
-        group_visible((self.item_finished_btn, self.item_run_btn,
-                       self.item_on_success_btn, self.item_on_failure_btn,
-                       self.item_edit_btn, self.item_create_btn, self.item_delete_btn),
-                      False)
 
         return
 
@@ -882,51 +854,35 @@ class ProgramItem(Item):
 
         return
 
-    def instruction_confirm_btn_cb(self, btn):
+    def instruction_selected_cb(self):
 
-        rospy.logdebug(self.instruction_id)
-        if self.instruction_id is not None:
+        instruction_id = self.select_instruction.selected_instruction_id
+        self.handle_new_instruction(instruction_id)
 
-            self.ph.add_item(self.block_id, self.instruction_id, self.item_id)
+    def handle_new_instruction(self, instruction_id):
 
-        self.instruction_back_btn_cb(btn)
-        self.scene().removeItem(self.items_list)
-        self._init_items_list()
+        new_id = None
+        if instruction_id is not None:
 
-        if self.item_added_cb is not None:
-            self.item_added_cb()
+            new_id = self.ph.add_item(self.block_id, instruction_id, self.item_id)
 
-        return
-
-    def instruction_back_btn_cb(self, btn):
-
-        self.items_list.setVisible(True)
-        self.scene().removeItem(self.instruction_list)
-
-        group_visible((self.instruction_confirm_btn, self.instruction_back_btn),
-                      False)
-
-        group_visible((self.item_finished_btn, self.item_run_btn,
-                       self.item_on_success_btn, self.item_on_failure_btn, self.item_edit_btn,
-                       self.item_create_btn, self.item_delete_btn),
-                      True)
+        self.setVisible(True)
+        self.select_instruction.setVisible(False)
 
         self._handle_item_btns()
 
-        return
+        if instruction_id is not None:
 
-    def instruction_selected_cb(self):
+            self.scene().removeItem(self.items_list)
+            self._init_items_list()
 
-        if self.instruction_list.selected_item_idx is not None:
+            if self.item_added_cb is not None:
+                self.item_added_cb()
 
-            self.instruction_id = self.new_item_map[self.instruction_list.selected_item_idx]
-            self.instruction_confirm_btn.set_enabled(True)
+        self.items_list.set_current_idx(self.items_map_rev[new_id], True)
+        self.item_selected_cb()
 
-        else:
-            self.instruction_confirm_btn.set_enabled(False)
-            self.instruction_id = None
-
-        return
+        return new_id
 
     def item_run_btn_cb(self, btn):
 
@@ -1119,8 +1075,8 @@ class ProgramItem(Item):
         for idx, item_id in self.items_map.iteritems():
 
             if self.ph.item_learned(block_id, item_id) or \
-                    (self.ph.get_item_msg(block_id, item_id).type in self.ih.properties.runnable_during_learning and
-                     not self.ih.requires_learning(self.ph.get_item_msg(block_id, item_id).type)):
+                    (self.ph.get_item_msg(block_id, item_id).type in self.ih.properties.runnable_during_learning
+                     and not self.ih.requires_learning(self.ph.get_item_msg(block_id, item_id).type)):
                 self.items_list.items[idx].set_background_color()
             else:
                 self.items_list.items[idx].set_background_color(QtCore.Qt.red)

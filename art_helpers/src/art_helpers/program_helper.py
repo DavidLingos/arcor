@@ -116,6 +116,7 @@ class ProgramHelper(object):
                 # 0 means jump to the end
                 if vv["on_success"] != 0 and vv["on_success"] not in cache[k]["items"]:
 
+                    rospy.logdebug(cache[k]["items"])
                     rospy.logerr("Block id: " + str(k) + ", item id: " +
                                  str(kk) + " has invalid on_success: " + str(vv["on_success"]))
                     return False
@@ -667,8 +668,9 @@ class ProgramHelper(object):
             item_msg
         )
 
-        self.art.store_program(self._prog)
-        self.load(self._prog)
+        if self.art.store_program(self._prog):
+            self.load(self._prog)
+
         return item_msg.id
 
     def delete_item(self, block_id, item_id):
@@ -689,8 +691,14 @@ class ProgramHelper(object):
 
         del self._prog.blocks[block_idx].items[item_idx]
 
-        self.load(self._prog)
         self.art.store_program(self._prog)
+        self.load(self._prog)
+
+    def get_object_instructions(self):
+        instructions = self.ih.known_instructions()
+        return list(filter(lambda x:
+                           x in self.ih.properties.using_object
+                           and x not in self.ih.properties.place, instructions))
 
     def get_allowed_new_items(self, block_id, previous_item_id=None):
 
