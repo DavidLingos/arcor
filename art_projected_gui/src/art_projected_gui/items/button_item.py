@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import rospy
 from PyQt4 import QtGui, QtCore
 from item import Item
 
@@ -16,6 +17,7 @@ class ButtonItem(Item):
             caption,
             parent,
             clicked,
+            id=None,
             scale=1.0,
             background_color=QtCore.Qt.green,
             width=None,
@@ -27,6 +29,7 @@ class ButtonItem(Item):
         self.clicked = clicked
         self.push_button = push_button
         self.pressed = False
+        self.id = id
 
         self.img = None
 

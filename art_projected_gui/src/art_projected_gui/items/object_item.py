@@ -39,6 +39,7 @@ class ObjectItem(Item):
         self.ly = 0
         self.dashed = dashed
 
+        self.select_instruction_list = None
         self.desc = None
         self.quaternion = (0, 0, 0, 1)
         self.on_table = False

@@ -191,7 +191,7 @@ class InstructionsHelper(object):
     @staticmethod
     def get_instruction_msgs(item_type, it_id,
                              on_success=0, on_failure=0, obj_type="", ref_id=[],
-                             name="", objects=2, holes=2):
+                             name="", objects=2, holes=2, drill_obj_type=[""]):
 
         if item_type == "PickFromPolygon":
             return polygon_item(it_id, on_success, on_failure, obj_type, ref_id)
@@ -204,7 +204,7 @@ class InstructionsHelper(object):
         elif item_type == "PlaceToGrid":
             return grid_item(it_id, ref_id, on_success, on_failure, objects)
         elif item_type == "DrillPoints":
-            return drill_item(it_id, ref_id, on_success, on_failure, holes, obj_type)
+            return drill_item(it_id, ref_id, on_success, on_failure, holes, obj_type=drill_obj_type)
         elif item_type == "WaitUntilUserFinishes":
             return wait_item(it_id, ref_id, on_success, on_failure)
         else:

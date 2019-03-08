@@ -879,8 +879,8 @@ class ProgramItem(Item):
             if self.item_added_cb is not None:
                 self.item_added_cb()
 
-        self.items_list.set_current_idx(self.items_map_rev[new_id], True)
-        self.item_selected_cb()
+            self.items_list.set_current_idx(self.items_map_rev[new_id], True)
+            self.item_selected_cb()
 
         return new_id
 

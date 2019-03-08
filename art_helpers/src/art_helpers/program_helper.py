@@ -117,14 +117,14 @@ class ProgramHelper(object):
                 if vv["on_success"] != 0 and vv["on_success"] not in cache[k]["items"]:
 
                     rospy.logdebug(cache[k]["items"])
-                    rospy.logerr("Block id: " + str(k) + ", item id: " +
-                                 str(kk) + " has invalid on_success: " + str(vv["on_success"]))
+                    rospy.logerr("Block id: " + str(k) + ", item id: "
+                                 + str(kk) + " has invalid on_success: " + str(vv["on_success"]))
                     return False
 
                 if vv["on_failure"] != 0 and vv["on_failure"] not in cache[k]["items"]:
 
-                    rospy.logerr("Block id: " + str(k) + ", item id: " + str(kk) +
-                                 " has invalid on_failure: " + str(vv["on_failure"]))
+                    rospy.logerr("Block id: " + str(k) + ", item id: " + str(kk)
+                                 + " has invalid on_failure: " + str(vv["on_failure"]))
                     return False
 
                 item = prog.blocks[v["idx"]].items[vv["idx"]]
@@ -134,8 +134,8 @@ class ProgramHelper(object):
 
                     if ref not in cache[k]["items"]:
 
-                        rospy.logerr("Block id: " + str(k) + ", item id: " + str(kk) +
-                                     " has invalid ref_id: " + str(ref))
+                        rospy.logerr("Block id: " + str(k) + ", item id: " + str(kk)
+                                     + " has invalid ref_id: " + str(ref))
                         return False
 
                 # at least one 'object' mandatory for following types
@@ -179,8 +179,8 @@ class ProgramHelper(object):
 
                         if ref_msg.type not in self.ih.properties.pick:
 
-                            rospy.logerr("Block id: " + str(k) + ", item id: " + str(kk) +
-                                         " has ref_id which is not PICK_*!")
+                            rospy.logerr("Block id: " + str(k) + ", item id: " + str(kk)
+                                         + " has ref_id which is not PICK_*!")
                             return False
 
                 # TODO refactor into separate method
@@ -639,7 +639,8 @@ class ProgramHelper(object):
         item_msg.on_success = on_success
 
         # if place_set ref to the nearest pick
-        if item_msg.type in self.ih.properties.place | self.ih.properties.ref_to_pick:
+        if item_msg.type in self.ih.properties.place or \
+                item_msg.type in self.ih.properties.ref_to_pick:
 
             i = previous_item_idx
             while i > -1 and items[i].type not in self.ih.properties.pick:
@@ -695,15 +696,17 @@ class ProgramHelper(object):
         self.load(self._prog)
 
     def get_object_instructions(self):
+
         instructions = self.ih.known_instructions()
         return list(filter(lambda x:
-                           x in self.ih.properties.using_object
-                           and x not in self.ih.properties.place, instructions))
+                           x in self.ih.properties.using_object and
+                           x not in self.ih.properties.place, instructions))
 
     def get_allowed_new_items(self, block_id, previous_item_id=None):
 
         # if True place instructions are removed
         remove_place = True
+        remove_pick = False
 
         block_idx = self._get_block_on(block_id, "idx")
 
@@ -722,14 +725,20 @@ class ProgramHelper(object):
 
                 item = self._prog.blocks[block_idx].items[i]
 
-                if item.type in self.ih.properties.pick:
+                any_ref = any((lambda: item.id in i.ref_id)() for i in self._prog.blocks[block_idx].items)
+                if item.type in self.ih.properties.pick and not any_ref:
                     remove_place = False
+                    remove_pick = True
 
         if remove_place:
             for t in self.ih.properties.place:
                 instructions.remove(t)
 
             for t in self.ih.properties.ref_to_pick:
+                instructions.remove(t)
+
+        if remove_pick:
+            for t in self.ih.properties.pick:
                 instructions.remove(t)
 
         return instructions

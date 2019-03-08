@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 import rospkg
 import rospy
 from PyQt4 import QtGui, QtCore
@@ -48,15 +50,25 @@ class SelectInstructionItem(Item):
         group_visible((self.instruction_confirm_btn, self.instruction_back_btn), False)
         self.setVisible(False)
         self.setFlag(QtGui.QGraphicsItem.ItemIsMovable, True)
+        self.setFlag(QtGui.QGraphicsItem.ItemIsSelectable, True)
+        self.setZValue(1000)
+        self.update()
 
         if obj is not None:
             self.instruction_btns = []
             for i in self.ph.get_object_instructions():
 
-                btn = ButtonItem(self.scene(), 0, 0, i, self, self.btn_instruction_cb,
+                btn = ButtonItem(self.scene(), 0, 0, "BTN", self, self.btn_instruction_cb,
+                                 id=i,
                                  image_path=icons_path + i.lower() + ".svg")
-
                 self.instruction_btns.append(btn)
+
+            total_width = 0
+
+            for it in self.instruction_btns:
+                total_width += it._width() + self.sp
+
+            self.w = total_width
 
             self._place_childs_horizontally(
                 0,
@@ -102,7 +114,7 @@ class SelectInstructionItem(Item):
 
     def btn_instruction_cb(self, btn):
 
-        self.selected_instruction_id = btn.caption
+        self.selected_instruction_id = btn.id
 
         self.selection_done_cb(btn)
 
