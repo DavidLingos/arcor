@@ -45,11 +45,11 @@ class FakeObjectTracker:
         self.objects.append(obj)
         obj = ObjInstance()
         obj.object_id = "profile_21_60"
-        obj.object_type = "profile_20_60"
+        obj.object_type = "container"
 
         obj.pose = Pose()
         obj.pose.position.x = 0.75
-        obj.pose.position.y = 0.58
+        obj.pose.position.y = 0.38
         obj.pose.position.z = 0
         obj.pose.orientation.x = 0
         obj.pose.orientation.y = 0

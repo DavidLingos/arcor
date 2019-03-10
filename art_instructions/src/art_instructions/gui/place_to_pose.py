@@ -89,7 +89,7 @@ class PlaceToPoseLearn(PlaceToPose):
                     continue
 
                 object_type = None
-                object_id = None
+                object_id = self.get_name(self.block_id, it_id)
 
                 if self.ui.ph.is_object_set(self.block_id, it_id):
                     object_type = self.ui.art.get_object_type(self.ui.ph.get_object(self.block_id, it_id)[0][0])

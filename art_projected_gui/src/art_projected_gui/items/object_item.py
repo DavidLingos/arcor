@@ -39,6 +39,7 @@ class ObjectItem(Item):
         self.ly = 0
         self.dashed = dashed
 
+        self.select_instruction_list = None
         self.desc = None
         self.quaternion = (0, 0, 0, 1)
         self.on_table = False
@@ -156,7 +157,7 @@ class ObjectItem(Item):
             return
 
         desc = ""
-        desc += translate("ObjectItem", "ID: ") + self.object_id
+        desc += translate("ObjectItem", "IDx: ") + self.object_id
 
         if self.hover:
 

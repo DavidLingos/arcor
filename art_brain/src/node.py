@@ -855,6 +855,7 @@ class ArtBrain(object):
         return resp
 
     def learning_start_cb(self, req):
+
         resp = ProgramIdTriggerResponse()
         resp.success = False
 
@@ -876,6 +877,10 @@ class ArtBrain(object):
             resp.success = False
             resp.error = 'Cannot get program.'
             return resp
+
+        if self.ph.is_empty():
+            self.state_manager.set_system_state(InterfaceState.STATE_LEARNING)
+            return
 
         rospy.logdebug('Starting learning')
         (self.block_id, item_id) = self.ph.get_first_item_id()
@@ -950,7 +955,7 @@ class ArtBrain(object):
                 rospy.set_param("program_id", self.ph.get_program_id())
                 rospy.set_param("block_id", self.block_id)
                 rospy.set_param("item_id", msg.program_current_item.id)
-                self.art.store_program(self.ph.get_program())
+                # self.art.store_program(self.ph.get_program())
         pass
 
     def projectors_calibrated_cb(self, msg):

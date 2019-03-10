@@ -221,6 +221,15 @@ class UICore(QtCore.QObject):
 
         return None
 
+    def get_place(self, obj_id):
+        """Returns PlaceItem with given object_id or None if the ID is not found."""
+
+        for it in self.get_scene_items_by_type(PlaceItem):
+            if it.object_id == obj_id:
+                return it
+
+        return None
+
     def add_place(self, caption, pose_stamped, object_type,
                   object_id=None, place_cb=None, fixed=False, dashed=False):
 

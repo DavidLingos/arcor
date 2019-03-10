@@ -4,6 +4,7 @@ from PyQt4 import QtGui, QtCore
 from item import Item
 from button_item import ButtonItem
 import rospkg
+import rospy
 
 translate = QtCore.QCoreApplication.translate
 
@@ -13,13 +14,14 @@ icons_path = rospack.get_path('art_projected_gui') + '/icons/'
 
 class ListItem(Item):
 
-    def __init__(self, scene, x, y, w, data, item_selected_cb=None, parent=None):
+    def __init__(self, scene, x, y, w, data, item_selected_cb=None, item_moved_cb=None, parent=None):
 
         self.w = 100
         self.h = 100
         self.sp = 0
 
         self.item_selected_cb = item_selected_cb
+        self.item_moved_cb = item_moved_cb
 
         super(ListItem, self).__init__(scene, x, y, parent=parent)
 
@@ -98,61 +100,75 @@ class ListItem(Item):
 
         displayed = [self.middle_item_idx]
 
-        # selected item is always vertically centered
-        self.items[self.middle_item_idx].setPos(
-            0, (self.h - self.items[self.middle_item_idx].boundingRect().height()) / 2)
-        self.items[self.middle_item_idx].setVisible(True)
+        if self.middle_item_idx != -1:
 
-        if select:
-            self.items[self.selected_item_idx].set_pressed(True)
+            # selected item is always vertically centered
+            self.items[self.middle_item_idx].setPos(
+                0, (self.h - self.items[self.middle_item_idx].boundingRect().height()) / 2)
+            self.items[self.middle_item_idx].setVisible(True)
 
-        # how much vert. space is used
-        vspace = self.items[self.middle_item_idx].boundingRect().height()
+            if select:
+                self.items[self.selected_item_idx].set_pressed(True)
 
-        # fill space above middle item
-        for idx in range(self.middle_item_idx - 1, -1, -1):
+            # how much vert. space is used
+            vspace = self.items[self.middle_item_idx].boundingRect().height()
 
-            h = self.items[idx].boundingRect().height()
-            y = self.items[idx + 1].y() - self.sp - h
+            # fill space above middle item
+            for idx in range(self.middle_item_idx - 1, -1, -1):
 
-            if y < 0:
-                break
+                h = self.items[idx].boundingRect().height()
+                y = self.items[idx + 1].y() - self.sp - h
 
-            self.items[idx].setPos(0, y)
-            self.items[idx].setVisible(True)
-            displayed.append(idx)
-            vspace += self.sp + h
-            displayed.append(idx)
+                if y < 0:
+                    break
 
-        # fill space below middle item
-        for idx in range(self.middle_item_idx + 1, len(self.items)):
+                self.items[idx].setPos(0, y)
+                self.items[idx].setVisible(True)
+                displayed.append(idx)
+                vspace += self.sp + h
+                displayed.append(idx)
 
-            h = self.items[idx].boundingRect().height()
-            y = self.items[idx - 1].y() + self.items[idx -
-                                                     1].boundingRect().height() + self.sp
+            # fill space below middle item
+            for idx in range(self.middle_item_idx + 1, len(self.items)):
 
-            if y + h > self.down_btn.y():
-                break
+                h = self.items[idx].boundingRect().height()
+                y = self.items[idx - 1].y() + self.items[idx -
+                                                         1].boundingRect().height() + self.sp
 
-            self.items[idx].setPos(0, y)
-            self.items[idx].setVisible(True)
-            vspace += self.sp + h
+                if y + h > self.down_btn.y():
+                    break
+
+                self.items[idx].setPos(0, y)
+                self.items[idx].setVisible(True)
+                vspace += self.sp + h
             displayed.append(idx)
 
         if self.isEnabled():
 
-            self.up_btn.set_enabled(min(displayed) > 0)
-            self.down_btn.set_enabled(max(displayed) < len(self.items) - 1)
+            if None not in (self.item_moved_cb, self.selected_item_idx):
+
+                self.up_btn.set_enabled(self.selected_item_idx > 0)
+                self.down_btn.set_enabled(self.selected_item_idx < len(self.items) - 1)
+
+            else:
+                self.up_btn.set_enabled(min(displayed) > 0)
+                self.down_btn.set_enabled(max(displayed) < len(self.items) - 1)
 
     def up_btn_cb(self, btn):
 
         if self.middle_item_idx > 0:
             self.set_current_idx(self.middle_item_idx - 1)
 
+        if self.item_moved_cb is not None:
+            self.item_moved_cb()
+
     def down_btn_cb(self, btn):
 
         if self.middle_item_idx < len(self.items) - 1:
             self.set_current_idx(self.middle_item_idx + 1)
+
+        if self.item_moved_cb is not None:
+            self.item_moved_cb(up=False)
 
     def boundingRect(self):
 
