@@ -487,6 +487,14 @@ def main(args):
     ot.bbox.dimensions.append(0.04)
     ot.bbox.dimensions.append(0.002)
 
+    ot = ObjectType()
+    ot.container = True
+    ot.name = "container"
+    ot.bbox.type = SolidPrimitive.BOX
+    ot.bbox.dimensions.append(0.08)
+    ot.bbox.dimensions.append(0.04)
+    ot.bbox.dimensions.append(0.002)
+
     store_object_type(ot)
 
     ot.name = "profile_20_80"

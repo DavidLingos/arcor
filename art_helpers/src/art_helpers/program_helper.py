@@ -710,7 +710,7 @@ class ProgramHelper(object):
                         & set(self.get_allowed_new_items(block_id, previous_item_id)))
 
         if object_type.container:
-
+            return ["PlaceToContainer"]
             return list(set(["PlaceToContainer"])
                         & set(self.get_allowed_new_items(block_id, previous_item_id)))
 
