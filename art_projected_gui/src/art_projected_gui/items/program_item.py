@@ -114,7 +114,7 @@ class ProgramItem(Item):
         self.block_back_btn = ButtonItem(self.scene(), 0, 0, translate(
             "ProgramItem", "Back"), self, self.block_back_btn_cb)
 
-        self.select_instruction = SelectInstructionItem(scene, x, y, self.ph, None, self.instruction_selected_cb)
+        self.select_instruction = None
         y = self._init_blocks_list()
 
         if visualize:
@@ -208,9 +208,6 @@ class ProgramItem(Item):
         self._update_learned()
         self.update()
 
-        view = self.scene().views()[0]
-        # view.mousePressEvent = self.scene_clicked_evt
-
         if self.item_switched_cb:
             self.item_switched_cb(None, None, blocks=True)
 
@@ -237,6 +234,19 @@ class ProgramItem(Item):
 
             self.title.set_content(translate("ProgramItem", "Program %1").arg(self.ph.get_program_id()),
                                    scale=1.2, color=color)
+
+    def select_block_item(self, block_id, item_id):
+
+        if block_id is not None:
+            idx = self.blocks_map_rev[block_id]
+            self.blocks_list.set_current_idx(idx, select=True)
+            self.block_selected_cb()
+            self.block_edit_btn_cb(self.block_edit_btn)
+
+            if item_id is not None:
+                self.items_list.set_current_idx(
+                    self.items_map_rev[item_id], True)
+                self.item_selected_cb()
 
     def pr_pause_btn_cb(self, btn):
 
@@ -584,7 +594,15 @@ class ProgramItem(Item):
         # init instruction selection
 
         y = self.title.mapToParent(self.title.boundingRect().bottomLeft()).y()
-        self.select_instruction.init(y, self.block_id, self.item_id)
+
+        self.select_instruction = SelectInstructionItem(
+            self.scene(),
+            self.position[0],
+            self.position[1],
+            self.ph,
+            block_id=self.block_id,
+            item_id=self.item_id,
+            instruction_selected_cb=self.instruction_selected_cb)
 
     def block_edit_btn_cb(self, btn):
 
@@ -867,7 +885,8 @@ class ProgramItem(Item):
             new_id = self.ph.add_item(self.block_id, instruction_id, self.item_id)
 
         self.setVisible(True)
-        self.select_instruction.setVisible(False)
+        if self.select_instruction is not None:
+            self.select_instruction.setVisible(False)
 
         self._handle_item_btns()
 
@@ -1075,8 +1094,8 @@ class ProgramItem(Item):
         for idx, item_id in self.items_map.iteritems():
 
             if self.ph.item_learned(block_id, item_id) or \
-                    (self.ph.get_item_msg(block_id, item_id).type in self.ih.properties.runnable_during_learning
-                     and not self.ih.requires_learning(self.ph.get_item_msg(block_id, item_id).type)):
+                    (self.ph.get_item_msg(block_id, item_id).type in self.ih.properties.runnable_during_learning and
+                     not self.ih.requires_learning(self.ph.get_item_msg(block_id, item_id).type)):
                 self.items_list.items[idx].set_background_color()
             else:
                 self.items_list.items[idx].set_background_color(QtCore.Qt.red)
@@ -1085,14 +1104,6 @@ class ProgramItem(Item):
                 self.get_text_for_item(block_id, item_id))
 
         self._update_block(block_id)
-
-    def scene_clicked_evt(self, evt):
-
-        rospy.logdebug('CLICKED')
-        view = self.scene().views()[0]
-        if self.items_list is not None:
-            if view.itemAt(evt.x(), evt.y()) is None:
-                rospy.logdebug('SCENE CLICKED')
 
     def get_current_item(self):
 

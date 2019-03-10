@@ -695,9 +695,21 @@ class ProgramHelper(object):
         self.art.store_program(self._prog)
         self.load(self._prog)
 
-    def get_object_instructions(self):
+    def get_object_instructions(self, block_id, object_type=None, previous_item_id=None):
 
         instructions = self.ih.known_instructions()
+
+        if object_type is None:
+
+            return ["PlaceToPolygon"]
+            return list(set(["PlaceToPolygon"]) &
+                        set(self.get_allowed_new_items(block_id, previous_item_id)))
+
+        if object_type.container:
+
+            return list(set(["PlaceToContainer"]) &
+                        set(self.get_allowed_new_items(block_id, previous_item_id)))
+
         return list(filter(lambda x:
                            x in self.ih.properties.using_object and
                            x not in self.ih.properties.place, instructions))
