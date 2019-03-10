@@ -6,7 +6,7 @@ import rospy
 from art_msgs.msg import InstancesArray, InterfaceState, LearningRequestAction,\
     LearningRequestGoal, HololensState, KeyValue
 from art_projected_gui.items import ObjectItem, ButtonItem, PoseStampedCursorItem, LabelItem,\
-    ProgramListItem, ProgramItem, DialogItem, PolygonItem, SelectInstructionItem
+    ProgramListItem, ProgramItem, DialogItem, PolygonItem, SelectInstructionItem, Item
 from art_projected_gui.helpers import conversions
 from art_helpers import InterfaceStateManager, ProgramHelper, ArtRobotHelper, UnknownRobot,\
     RobotParametersNotOnParameterServer
@@ -89,6 +89,7 @@ class UICoreRos(UICore):
         self.current_object = None
         self.select_instruction = None
         self.learn_instruction = False
+        self.clicked_pos = [0, 0]
 
         self.ph = ProgramHelper()
 
@@ -506,8 +507,8 @@ class UICoreRos(UICore):
 
         else:
 
-            rospy.logdebug("Attempt to pause/resume program in strange state: "
-                           + str(self.state_manager.state.system_state))
+            rospy.logdebug("Attempt to pause/resume program in strange state: " +
+                           str(self.state_manager.state.system_state))
             return False
 
     def cancel_cb(self):
@@ -852,8 +853,8 @@ class UICoreRos(UICore):
 
     def active_item_switched(self, block_id, item_id, read_only=True, blocks=False):
 
-        rospy.logdebug("Program ID:" + str(self.ph.get_program_id()) + ", active item ID: "
-                       + str((block_id, item_id)) + ", blocks: " + str(blocks) + ", ro: " + str(read_only))
+        rospy.logdebug("Program ID:" + str(self.ph.get_program_id()) + ", active item ID: " +
+                       str((block_id, item_id)) + ", blocks: " + str(blocks) + ", ro: " + str(read_only))
 
         if blocks:
 
@@ -908,8 +909,8 @@ class UICoreRos(UICore):
 
     def active_item_switched_for_visualization(self, block_id, item_id, read_only=True, blocks=False):
         """For HoloLens visualization. Called when clicked on specific block."""
-        rospy.logdebug("Program ID:" + str(self.ph.get_program_id()) + ", active item ID: "
-                       + str((block_id, item_id)) + ", blocks: " + str(blocks) + ", ro: " + str(read_only))
+        rospy.logdebug("Program ID:" + str(self.ph.get_program_id()) + ", active item ID: " +
+                       str((block_id, item_id)) + ", blocks: " + str(blocks) + ", ro: " + str(read_only))
 
         # self.clear_all()
 
@@ -1007,8 +1008,8 @@ class UICoreRos(UICore):
                 translate("UICoreRos", "Failed to store program"), temp=True, message_type=NotifyUserRequest.ERROR)
             # TODO what to do?
 
-        self.notif(translate("UICoreRos", "Program stored with ID=")
-                   + str(prog.header.id), temp=True)
+        self.notif(translate("UICoreRos", "Program stored with ID=") +
+                   str(prog.header.id), temp=True)
 
         self.last_edited_prog_id = prog.header.id
 
@@ -1201,9 +1202,26 @@ class UICoreRos(UICore):
 
         self.program_vis.learning_request_result(result.success)
 
-        if self.current_object is not None:
+        instruction = self.select_instruction.selected_instruction_id if \
+            self.select_instruction is not None else None
+
+        if instruction == "PlaceToPose":
+            place = self.get_place(self.ph.get_name(
+                self.program_vis.block_id,
+                self.program_vis.item_id
+            ))
+
+            if place is not None:
+                place.position[0] = self.clicked_pos[0]
+                place.position[1] = self.clicked_pos[1]
+                place.item_moved()
+                self.place_pose_changed(place=place)
+
+        elif self.current_object is not None:
+
             self.current_object.cursor_click()
 
+        if self.current_object is not None:
             self.program_vis.edit_request = True
             self.learning_request_cb(LearningRequestGoal.DONE)
 
@@ -1392,6 +1410,9 @@ class UICoreRos(UICore):
                     float(evt.x()) / self.view.width(),
                     float(self.view.height() - evt.y()) / self.view.height(),
                     obj=self.current_object)
+                self.clicked_pos = [
+                    float(evt.x()) / self.view.width(),
+                    float(self.view.height() - evt.y()) / self.view.height()]
 
         else:
             rospy.logdebug('passing CLICKED')
@@ -1414,13 +1435,13 @@ class UICoreRos(UICore):
 
             self.select_instruction.setPos(
                 self.current_object.mapFromScene(
-                    self.current_object.x() -
-                    self.current_object.sceneBoundingRect().width() /
-                    2,
-                    self.current_object.y() +
-                    self.current_object.sceneBoundingRect().height() /
-                    2 +
-                    self.current_object.m2pix(0.01)))
+                    self.current_object.x()
+                    - self.current_object.sceneBoundingRect().width()
+                    / 2,
+                    self.current_object.y()
+                    + self.current_object.sceneBoundingRect().height()
+                    / 2
+                    + self.current_object.m2pix(0.01)))
 
             return True
 
