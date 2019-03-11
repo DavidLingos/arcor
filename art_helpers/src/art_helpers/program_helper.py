@@ -228,10 +228,20 @@ class ProgramHelper(object):
 
     def get_first_item_id(self, block_id=None):
 
+        if block_id is not None:
+            items = self._cache[block_id]["items"]
+            if items:
+                item_id = min(items, key=items.get)
+            else:
+                block_id = None
+
         if block_id is None:
-            block_id = self.get_first_block_id()
-        items = self._cache[block_id]["items"]
-        item_id = min(items, key=items.get)
+            for i in self._cache.keys():
+                items = self._cache[i]["items"]
+                if items:
+                    block_id = i
+                    item_id = min(items, key=items.get)
+
         return block_id, item_id
 
     def get_item_msg(self, block_id, item_id):
@@ -683,7 +693,7 @@ class ProgramHelper(object):
         block_idx = self._get_block_on(block_id, "idx")
         block = self._prog.blocks[block_idx]
         items = block.items
-        block_id, item_idx = self._get_item_on(block_id, item_id, "idx")
+        item_idx = self._cache[block_id]["items"][item_id]["idx"]
 
         for i in range(item_idx, len(items)):
 
@@ -693,6 +703,8 @@ class ProgramHelper(object):
 
         if item_idx == len(items) - 1 and len(items) > 1:
             items[item_idx - 1].on_success = 1
+
+        rospy.logdebug(str(block_idx) + " " + str(item_idx))
 
         del self._prog.blocks[block_idx].items[item_idx]
 

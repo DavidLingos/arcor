@@ -1415,8 +1415,14 @@ class UICoreRos(UICore):
                     float(self.view.height() - evt.y()) / self.view.height()]
 
         else:
-            rospy.logdebug('passing CLICKED')
+
             item.cursor_click()
+
+            # if self.select_instruction is not None:
+            #     self.scene.removeItem(self.select_instruction)
+            #
+            # self.select_instruction = None
+            # self.current_object = None
 
     def object_selected(self, id, selected):
 
