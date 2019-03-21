@@ -3,7 +3,7 @@
 import rospy
 import importlib
 from art_utils.art_msgs_functions import obj_type, wait_item, feeder_item, grid_item, drill_item, place_item,\
-    item, polygon_item, visual_inspection_item
+    item, polygon_item, visual_inspection_item, place_container_item
 
 
 class InstructionsHelperException(Exception):
@@ -203,6 +203,8 @@ class InstructionsHelper(object):
             return place_item(it_id, ref_id, on_success, on_failure, name)
         elif item_type == "PlaceToGrid":
             return grid_item(it_id, ref_id, on_success, on_failure, objects)
+        elif item_type == "PlaceToContainer":
+            return place_container_item(it_id, ref_id, on_success, on_failure)
         elif item_type == "DrillPoints":
             return drill_item(it_id, ref_id, on_success, on_failure, holes, obj_type=drill_obj_type)
         elif item_type == "WaitUntilUserFinishes":

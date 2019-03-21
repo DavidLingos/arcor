@@ -6,7 +6,7 @@ from art_msgs.msg import Program, ProgramBlock, ProgramItem
 from copy import deepcopy
 from art_utils import ArtApiHelper
 from art_utils.art_msgs_functions import obj_type, wait_item, feeder_item, grid_item, drill_item, place_item,\
-    item, polygon_item, visual_inspection_item
+    item, polygon_item, visual_inspection_item, place_container_item
 from geometry_msgs.msg import PolygonStamped
 
 
@@ -56,7 +56,6 @@ def main(args):
     prog.header.id = 2
     prog.header.name = "Trenink - podavac"
 
-
     pb = ProgramBlock()
     pb.id = 1
     pb.name = "Zvedni z podavace a poloz"
@@ -72,7 +71,7 @@ def main(args):
     pb.items.append(wait_item(6, ref_id=[4], on_success=1, on_failure=0))
 
     art.store_program(prog)
-    #art.program_set_ro(prog.header.id)
+    # art.program_set_ro(prog.header.id)
 
     # -------------------------------------------------------------------------------------------
     # Training program 3
@@ -137,20 +136,20 @@ def main(args):
     prog.blocks.append(pb)
 
     pb.items.append(polygon_item(1))
-
-    p = ProgramItem()
-    p.id = 2
-    p.type = "PlaceToContainer"
-    p.polygon.append(PolygonStamped())
-    p.object.append("")
-    p.on_success = 1
-    p.on_failure = 0
-    p.ref_id.append(1)
-
-    pb.items.append(p)
+    pb.items.append(place_container_item(2, ref_id=[1], on_success=1, on_failure=0))
+    # p = ProgramItem()
+    # p.id = 2
+    # p.type = "PlaceToContainer"
+    # p.polygon.append(PolygonStamped())
+    # p.object.append("")
+    # p.on_success = 1
+    # p.on_failure = 0
+    # p.ref_id.append(1)
+    #
+    # pb.items.append(p)
 
     art.store_program(prog)
-    art.program_set_ro(prog.header.id)
+    # art.program_set_ro(prog.header.id)
 
     # -------------------------------------------------------------------------------------------
     # Simplified trolley assembly: object types
