@@ -117,14 +117,14 @@ class ProgramHelper(object):
                 if vv["on_success"] != 0 and vv["on_success"] not in cache[k]["items"]:
 
                     rospy.logdebug(cache[k]["items"])
-                    rospy.logerr("Block id: " + str(k) + ", item id: " +
-                                 str(kk) + " has invalid on_success: " + str(vv["on_success"]))
+                    rospy.logerr("Block id: " + str(k) + ", item id: "
+                                 + str(kk) + " has invalid on_success: " + str(vv["on_success"]))
                     return False
 
                 if vv["on_failure"] != 0 and vv["on_failure"] not in cache[k]["items"]:
 
-                    rospy.logerr("Block id: " + str(k) + ", item id: " + str(kk) +
-                                 " has invalid on_failure: " + str(vv["on_failure"]))
+                    rospy.logerr("Block id: " + str(k) + ", item id: " + str(kk)
+                                 + " has invalid on_failure: " + str(vv["on_failure"]))
                     return False
 
                 item = prog.blocks[v["idx"]].items[vv["idx"]]
@@ -134,8 +134,8 @@ class ProgramHelper(object):
 
                     if ref not in cache[k]["items"]:
 
-                        rospy.logerr("Block id: " + str(k) + ", item id: " + str(kk) +
-                                     " has invalid ref_id: " + str(ref))
+                        rospy.logerr("Block id: " + str(k) + ", item id: " + str(kk)
+                                     + " has invalid ref_id: " + str(ref))
                         return False
 
                 # at least one 'object' mandatory for following types
@@ -179,8 +179,8 @@ class ProgramHelper(object):
 
                         if ref_msg.type not in self.ih.properties.pick:
 
-                            rospy.logerr("Block id: " + str(k) + ", item id: " + str(kk) +
-                                         " has ref_id which is not PICK_*!")
+                            rospy.logerr("Block id: " + str(k) + ", item id: " + str(kk)
+                                         + " has ref_id which is not PICK_*!")
                             return False
 
                 # TODO refactor into separate method
@@ -430,6 +430,10 @@ class ProgramHelper(object):
 
     def program_learned(self):
 
+        if self.is_empty():
+
+            return False
+
         blocks = self.get_block_ids()
 
         for block_id in blocks:
@@ -570,8 +574,16 @@ class ProgramHelper(object):
     def get_new_program_id(self):
 
         headers = self.art.get_program_headers()
+        ids = []
 
-        return max(headers, key=lambda x: x.id).id + 1
+        for h in headers:
+            ids.append(h.id)
+
+        for i in range(1, 2 ** 16 - 1):
+            if i not in ids:
+                return i
+
+        return None
 
     def add_block(self, previous_block_id=None):
 
@@ -648,7 +660,7 @@ class ProgramHelper(object):
         item_msg = self.ih.get_instruction_msgs(
             item_type,
             len(items) + 1,
-            name="Block_" + str(block_id) + "Item_" + str(previous_item_idx)
+            name=item_type + str(len(items) + 1)
         )
         item_msg.on_success = on_success
 
@@ -711,24 +723,51 @@ class ProgramHelper(object):
         self.art.store_program(self._prog)
         self.load(self._prog)
 
+    def set_on_success(self, block_id, item_id, item_on_success_id):
+
+        item_msg = self.get_item_msg(block_id, item_id)
+
+        item_msg.on_success = item_on_success_id
+
+        self.set_item_msg(block_id, item_msg)
+
+        self.art.store_program(self._prog)
+        self.load(self._prog)
+
+        return
+
+    def set_on_failure(self, block_id, item_id, item_on_failure_id):
+
+        item_msg = self.get_item_msg(block_id, item_id)
+
+        item_msg.on_failure = item_on_failure_id
+
+        self.set_item_msg(block_id, item_msg)
+
+        self.art.store_program(self._prog)
+        self.load(self._prog)
+
+        return
+
     def get_object_instructions(self, block_id, object_type=None, previous_item_id=None):
 
         instructions = self.ih.known_instructions()
 
         if object_type is None:
 
-            return ["PlaceToPose"]
-            return list(set(["PlaceToPose"])
-                        & set(self.get_allowed_new_items(block_id, previous_item_id)))
+            # return ["PlaceToPose"]
+            return list(set(["PlaceToPose"]) &
+                        set(self.get_allowed_new_items(block_id, previous_item_id)))
 
         if object_type.container:
-            return ["PlaceToContainer"]
-            return list(set(["PlaceToContainer"])
-                        & set(self.get_allowed_new_items(block_id, previous_item_id)))
+
+            # return ["PlaceToContainer"]
+            return list(set(["PlaceToContainer"]) &
+                        set(self.get_allowed_new_items(block_id, previous_item_id)))
 
         return list(filter(lambda x:
-                           x in self.ih.properties.using_object
-                           and x not in self.ih.properties.place, instructions))
+                           x in self.ih.properties.using_object and
+                           x not in self.ih.properties.place, instructions))
 
     def get_allowed_new_items(self, block_id, previous_item_id=None):
 
@@ -747,16 +786,14 @@ class ProgramHelper(object):
 
             block_id, previous_item_idx = self._get_item_on(block_id, previous_item_id, "idx")
 
-            remove_place = True
-
             for i in range(previous_item_idx, -1, -1):
 
                 item = self._prog.blocks[block_idx].items[i]
 
-                any_ref = any((lambda: item.id in i.ref_id)() for i in self._prog.blocks[block_idx].items)
-                if item.type in self.ih.properties.pick and not any_ref:
+                # any_ref = any((lambda: item.id in i.ref_id)() for i in self._prog.blocks[block_idx].items)
+                if item.type in self.ih.properties.pick:
                     remove_place = False
-                    remove_pick = True
+                    # remove_pick = True
 
         if remove_place:
             for t in self.ih.properties.place:
@@ -771,43 +808,52 @@ class ProgramHelper(object):
 
         return instructions
 
-    def move_item_down(self, block_id, item_idx):
+    def move_block_item_down(self, block_id, item_idx=None):
         block_idx = self._cache[block_id]["idx"]
 
-        if len(self._prog.blocks[block_idx].items) > item_idx + 1:
+        if item_idx is not None:
+            if len(self._prog.blocks[block_idx].items) > item_idx + 1:
 
-            self._prog.blocks[block_idx].items[item_idx], self._prog.blocks[block_idx].items[item_idx + 1] = \
-                self._prog.blocks[block_idx].items[item_idx + 1], self._prog.blocks[block_idx].items[item_idx]
+                self._prog.blocks[block_idx].items[item_idx], self._prog.blocks[block_idx].items[item_idx + 1] = \
+                    self._prog.blocks[block_idx].items[item_idx + 1], self._prog.blocks[block_idx].items[item_idx]
 
-            self.art.store_program(self._prog)
-            self.load(self._prog)
+        self._prog.blocks[block_idx].on_success = self._prog.blocks[block_idx + 1].on_success
+        self._prog.blocks[block_idx + 1].on_success = self._prog.blocks[block_idx].on_success
 
-    def move_item_up(self, block_id, item_idx):
+        if block_idx < len(self._prog.blocks) - 1:
+            self._prog.blocks[block_idx], self._prog.blocks[block_idx + 1] = \
+                self._prog.blocks[block_idx], self._prog.blocks[block_idx + 1]
+
+        self.art.store_program(self._prog)
+        self.load(self._prog)
+
+    def move_block_item_up(self, block_id, item_idx=None):
         block_idx = self._cache[block_id]["idx"]
 
-        if item_idx > 0:
+        if item_idx is not None:
+            if item_idx > 0:
 
-            self._prog.blocks[block_idx].items[item_idx], self._prog.blocks[block_idx].items[item_idx - 1] = \
-                self._prog.blocks[block_idx].items[item_idx - 1], self._prog.blocks[block_idx].items[item_idx]
+                self._prog.blocks[block_idx].items[item_idx], self._prog.blocks[block_idx].items[item_idx - 1] = \
+                    self._prog.blocks[block_idx].items[item_idx - 1], self._prog.blocks[block_idx].items[item_idx]
 
-            self.art.store_program(self._prog)
-            self.load(self._prog)
+        if block_idx > 0:
+            self._prog.blocks[block_idx].on_success = self._prog.blocks[block_idx - 1].on_success
+            self._prog.blocks[block_idx - 1].on_success = self._prog.blocks[block_idx].on_success
 
-    # def join_blocks(self, block_id1, block_id2):
-    #     block_idx1 = self._get_block_on(block_id1, "idx")
-    #     block_idx2 = self._get_block_on(block_id2, "idx")
-    #     self._prog.blocks[block_idx1].items += self._prog.blocks[block_idx2].items
-    #     del self._prog.blocks[block_idx2]
-    #
-    # def split_instructions(self, block_id, item_id1, item_id2):
-    #     block_idx = self._cache[block_id]["idx"]
-    #     item_idx1 = self._cache[block_id]["items"][item_id1]["idx"]
-    #     item_idx2 = self._cache[block_id]["items"][item_id2]["idx"]
-    #     if item_idx2 < item_idx1:
-    #         item_idx1, item_idx2 = item_idx2, item_idx1
-    #     block = self._prog.blocks[block_idx]
-    #     new_block = deepcopy(block)
-    #     new_block.items = deepcopy(block.items[item_idx2:])
-    #     new_block.id = max(self.get_block_ids()) + 1
-    #     del block.items[item_idx2:]
-    #     self._prog.blocks.insert(block_idx + 1, new_block)
+            self._prog.blocks[block_idx], self._prog.blocks[block_idx - 1] = \
+                self._prog.blocks[block_idx], self._prog.blocks[block_idx - 1]
+
+        self.art.store_program(self._prog)
+        self.load(self._prog)
+
+    def item_can_be_deleted(self, block_id, item_id):
+
+        block_idx = self._cache[block_id]["idx"]
+
+        for i in range(0, len(self._prog.blocks[block_idx].items)):
+
+            if item_id in self._prog.blocks[block_idx].items[i].ref_id:
+
+                return False
+
+        return True

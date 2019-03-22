@@ -98,20 +98,20 @@ class PlaceToPoseLearn(PlaceToPose):
 
                     if self.editable:
 
-                        for arm in self.ui.rh.get_robot_arms():
-
-                            p = PoseStamped()
-                            p.header.frame_id = arm.base_link
-
-                            # TODO get world frame from ui (where it should be read from param)
-                            try:
-                                p = self.ui.tfl.transformPose("marker", p)
-                            except tf.Exception as e:
-                                self.logerr(str(e))
-                                continue
-
-                            self.range_ind.append(RangeVisItem(self.ui.scene, p.pose.position.x, p.pose.position.y,
-                                                               *arm.range))
+                        # for arm in self.ui.rh.get_robot_arms():
+                        #
+                        #     p = PoseStamped()
+                        #     p.header.frame_id = arm.base_link
+                        #
+                        #     # TODO get world frame from ui (where it should be read from param)
+                        #     try:
+                        #         p = self.ui.tfl.transformPose("marker", p)
+                        #     except tf.Exception as e:
+                        #         self.logerr(str(e))
+                        #         continue
+                        #
+                        #     self.range_ind.append(RangeVisItem(self.ui.scene, p.pose.position.x, p.pose.position.y,
+                        #                                        *arm.range))
 
                         self.ui.notif(
                             translate(
