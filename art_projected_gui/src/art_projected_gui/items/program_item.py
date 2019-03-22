@@ -794,16 +794,22 @@ class ProgramItem(Item):
 
     def block_item_moved_cb(self, up=True):
 
-        item_idx = None
+        if self.blocks_list.selected_item_idx is None:
+            return
+
+        if self.blocks_list.selected_item_idx is not None:
+            item_id = None
+            block_id = self.blocks_map[self.blocks_list.selected_item_idx]
 
         if self.items_list is not None:
-            item_idx = self.items_list.selected_item_idx
+            item_id = self.items_map[self.items_list.selected_item_idx]
+            block_id = self.block_id
 
         if up:
-            self.ph.move_block_item_up(self.block_id, item_idx)
+            self.ph.move_block_item_up(block_id, item_id)
 
         else:
-            self.ph.move_block_item_down(self.block_id, item_idx)
+            self.ph.move_block_item_down(block_id, item_id)
 
         if self.items_list is not None:
 

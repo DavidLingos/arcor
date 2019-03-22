@@ -91,8 +91,7 @@ class ProgramListItem(Item):
             self.list.set_current_idx(self.map_from_program_id_to_idx[selected_program_id])
 
         sp = self.m2pix(0.005)
-        # h = title.mapToParent(title.boundingRect().bottomLeft()).y() + sp
-        h = 0
+        h = title.mapToParent(title.boundingRect().bottomLeft()).y() + sp
 
         self.list.setPos(sp, h)
         h += self.list._height()

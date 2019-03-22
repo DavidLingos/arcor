@@ -808,8 +808,10 @@ class ProgramHelper(object):
 
         return instructions
 
-    def move_block_item_down(self, block_id, item_idx=None):
+    def move_block_item_down(self, block_id, item_id=None):
         block_idx = self._cache[block_id]["idx"]
+        item_idx = None if item_id is None else \
+            self._cache[block_id]["items"][item_id]["idx"]
 
         if item_idx is not None:
             if len(self._prog.blocks[block_idx].items) > item_idx + 1:
@@ -817,18 +819,22 @@ class ProgramHelper(object):
                 self._prog.blocks[block_idx].items[item_idx], self._prog.blocks[block_idx].items[item_idx + 1] = \
                     self._prog.blocks[block_idx].items[item_idx + 1], self._prog.blocks[block_idx].items[item_idx]
 
-        self._prog.blocks[block_idx].on_success = self._prog.blocks[block_idx + 1].on_success
-        self._prog.blocks[block_idx + 1].on_success = self._prog.blocks[block_idx].on_success
+        elif block_idx < len(self._prog.blocks) - 1:
 
-        if block_idx < len(self._prog.blocks) - 1:
+            success = self._prog.blocks[block_idx].on_success
+            self._prog.blocks[block_idx].on_success = self._prog.blocks[block_idx + 1].on_success
+            self._prog.blocks[block_idx + 1].on_success = success
+
             self._prog.blocks[block_idx], self._prog.blocks[block_idx + 1] = \
-                self._prog.blocks[block_idx], self._prog.blocks[block_idx + 1]
+                self._prog.blocks[block_idx + 1], self._prog.blocks[block_idx]
 
         self.art.store_program(self._prog)
         self.load(self._prog)
 
-    def move_block_item_up(self, block_id, item_idx=None):
+    def move_block_item_up(self, block_id, item_id=None):
         block_idx = self._cache[block_id]["idx"]
+        item_idx = None if item_id is None else \
+            self._cache[block_id]["items"][item_id]["idx"]
 
         if item_idx is not None:
             if item_idx > 0:
@@ -837,11 +843,12 @@ class ProgramHelper(object):
                     self._prog.blocks[block_idx].items[item_idx - 1], self._prog.blocks[block_idx].items[item_idx]
 
         if block_idx > 0:
+            success = self._prog.blocks[block_idx].on_success
             self._prog.blocks[block_idx].on_success = self._prog.blocks[block_idx - 1].on_success
-            self._prog.blocks[block_idx - 1].on_success = self._prog.blocks[block_idx].on_success
+            self._prog.blocks[block_idx - 1].on_success = success
 
             self._prog.blocks[block_idx], self._prog.blocks[block_idx - 1] = \
-                self._prog.blocks[block_idx], self._prog.blocks[block_idx - 1]
+                self._prog.blocks[block_idx - 1], self._prog.blocks[block_idx]
 
         self.art.store_program(self._prog)
         self.load(self._prog)
