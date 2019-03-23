@@ -508,8 +508,8 @@ class UICoreRos(UICore):
 
         else:
 
-            rospy.logdebug("Attempt to pause/resume program in strange state: "
-                           + str(self.state_manager.state.system_state))
+            rospy.logdebug("Attempt to pause/resume program in strange state: " +
+                           str(self.state_manager.state.system_state))
             return False
 
     def cancel_cb(self):
@@ -858,8 +858,8 @@ class UICoreRos(UICore):
 
     def active_item_switched(self, block_id, item_id, read_only=True, blocks=False):
 
-        rospy.logdebug("Program ID:" + str(self.ph.get_program_id()) + ", active item ID: "
-                       + str((block_id, item_id)) + ", blocks: " + str(blocks) + ", ro: " + str(read_only))
+        rospy.logdebug("Program ID:" + str(self.ph.get_program_id()) + ", active item ID: " +
+                       str((block_id, item_id)) + ", blocks: " + str(blocks) + ", ro: " + str(read_only))
 
         if blocks:
 
@@ -916,8 +916,8 @@ class UICoreRos(UICore):
 
     def active_item_switched_for_visualization(self, block_id, item_id, read_only=True, blocks=False):
         """For HoloLens visualization. Called when clicked on specific block."""
-        rospy.logdebug("Program ID:" + str(self.ph.get_program_id()) + ", active item ID: "
-                       + str((block_id, item_id)) + ", blocks: " + str(blocks) + ", ro: " + str(read_only))
+        rospy.logdebug("Program ID:" + str(self.ph.get_program_id()) + ", active item ID: " +
+                       str((block_id, item_id)) + ", blocks: " + str(blocks) + ", ro: " + str(read_only))
 
         # self.clear_all()
 
@@ -1017,8 +1017,8 @@ class UICoreRos(UICore):
                 translate("UICoreRos", "Failed to store program"), temp=True, message_type=NotifyUserRequest.ERROR)
             # TODO what to do?
 
-        self.notif(translate("UICoreRos", "Program stored with ID=")
-                   + str(prog.header.id), temp=True)
+        self.notif(translate("UICoreRos", "Program stored with ID=") +
+                   str(prog.header.id), temp=True)
 
         self.last_edited_prog_id = prog.header.id
 
@@ -1357,6 +1357,20 @@ class UICoreRos(UICore):
             if obj:
                 obj.set_pos(inst.pose.position.x, inst.pose.position.y, inst.pose.position.z)
                 obj.set_orientation(conversions.q2a(inst.pose.orientation))
+
+                if self.select_instruction is not None and \
+                        self.current_object == obj:
+
+                    self.select_instruction.setPos(
+                        obj.mapFromScene(
+                            obj.x()
+                            - obj.sceneBoundingRect().width()
+                            / 2,
+                            obj.y()
+                            + obj.sceneBoundingRect().height()
+                            / 2
+                            + obj.m2pix(0.01)))
+
             else:
 
                 obj_type = self.art.get_object_type(inst.object_type)
@@ -1445,13 +1459,13 @@ class UICoreRos(UICore):
 
             self.select_instruction.setPos(
                 self.current_object.mapFromScene(
-                    self.current_object.x() -
-                    self.current_object.sceneBoundingRect().width() /
-                    2,
-                    self.current_object.y() +
-                    self.current_object.sceneBoundingRect().height() /
-                    2 +
-                    self.current_object.m2pix(0.01)))
+                    self.current_object.x()
+                    - self.current_object.sceneBoundingRect().width()
+                    / 2,
+                    self.current_object.y()
+                    + self.current_object.sceneBoundingRect().height()
+                    / 2
+                    + self.current_object.m2pix(0.01)))
 
             return True
 

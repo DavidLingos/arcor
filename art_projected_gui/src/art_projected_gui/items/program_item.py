@@ -853,6 +853,8 @@ class ProgramItem(Item):
 
     def block_finished_btn_cb(self, btn):
 
+        self.block_id = self.item_id = None
+
         if self.done_cb is not None:
 
             self.done_cb()
