@@ -1418,10 +1418,6 @@ class UICoreRos(UICore):
 
         item = self.view.itemAt(evt.x(), evt.y())
 
-        rospy.logdebug("x: " + str(evt.x()) + ", y: " + str(evt.y()))
-        rospy.logdebug("Scene width: " + str(self.scene.width()) + ", Scene height: " + str(self.scene.height()))
-        rospy.logdebug("View width: " + str(self.view.width()) + ", View height: " + str(self.view.height()))
-
         if item is None:
 
             self.current_object = self.view
@@ -1432,7 +1428,7 @@ class UICoreRos(UICore):
             else:
                 self.show_instructions_list(
                     float(evt.x()) / self.view.width(),
-                    float(self.view.height() - evt.y()) / self.view.height() - 0.2,
+                    float(self.view.height() - evt.y()) / (self.view.height() * 2),
                     obj=self.current_object)
                 self.clicked_pos = [
                     float(evt.x()) / self.view.width(),

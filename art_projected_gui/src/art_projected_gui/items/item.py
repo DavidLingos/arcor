@@ -113,7 +113,7 @@ class Item(QtGui.QGraphicsItem):
                 total_width += it._width()
 
             inner_space = (self._width() - 2 * padding -
-                           total_width) / len(items) - 1
+                           total_width) / (len(items) - 1)
 
             items[0].setPos(padding, y)
 

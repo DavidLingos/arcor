@@ -637,11 +637,11 @@ class ProgramHelper(object):
         previous_item_idx = len(block.items) - 1
         on_success = 1
 
-        if previous_item_id is not None:
-
-            block_id, previous_item_idx = self._get_item_on(block_id, previous_item_id, "idx")
-            if previous_item_idx < len(items) - 1:
-                on_success = items[previous_item_idx].on_success + 1
+        # if previous_item_id is not None:
+        #
+        #     block_id, previous_item_idx = self._get_item_on(block_id, previous_item_id, "idx")
+        #     if previous_item_idx < len(items) - 1:
+        #         on_success = items[previous_item_idx].on_success + 1
 
         item_msg = self.ih.get_instruction_msgs(
             item_type,
@@ -739,6 +739,8 @@ class ProgramHelper(object):
 
         instructions = self.ih.known_instructions()
 
+        allowed_items = self.get_allowed_new_items(block_id, previous_item_id)
+
         if object_type is None:
 
             # return ["PlaceToPose"]
@@ -753,13 +755,13 @@ class ProgramHelper(object):
 
         return list(filter(lambda x:
                            x in self.ih.properties.using_object
-                           and x not in self.ih.properties.place, instructions))
+                           and x not in self.ih.properties.place
+                           and x in allowed_items, instructions))
 
     def get_allowed_new_items(self, block_id, previous_item_id=None):
 
         # if True place instructions are removed
         remove_place = True
-        remove_pick = False
 
         block_idx = self._get_block_on(block_id, "idx")
 
@@ -776,20 +778,14 @@ class ProgramHelper(object):
 
                 item = self._prog.blocks[block_idx].items[i]
 
-                # any_ref = any((lambda: item.id in i.ref_id)() for i in self._prog.blocks[block_idx].items)
                 if item.type in self.ih.properties.pick:
                     remove_place = False
-                    # remove_pick = True
 
         if remove_place:
             for t in self.ih.properties.place:
                 instructions.remove(t)
 
             for t in self.ih.properties.ref_to_pick:
-                instructions.remove(t)
-
-        if remove_pick:
-            for t in self.ih.properties.pick:
                 instructions.remove(t)
 
         return instructions
