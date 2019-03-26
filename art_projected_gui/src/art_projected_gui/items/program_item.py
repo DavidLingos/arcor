@@ -1,12 +1,14 @@
 #!/usr/bin/env python
 
 from PyQt4 import QtGui, QtCore
+import rospy
 from item import Item
 from art_msgs.msg import LearningRequestGoal
 from geometry_msgs.msg import Point32, Pose
 from button_item import ButtonItem
 from art_projected_gui.helpers import conversions
 from list_item import ListItem
+from select_instruction_item import SelectInstructionItem
 from art_projected_gui.helpers.items import group_enable, group_visible
 from geometry_msgs.msg import PoseStamped
 from desc_item import DescItem
@@ -31,6 +33,7 @@ class ProgramItem(Item):
             ih,
             done_cb=None,
             item_switched_cb=None,
+            item_added_cb=None,
             learning_request_cb=None,
             pause_cb=None,
             cancel_cb=None,
@@ -51,6 +54,7 @@ class ProgramItem(Item):
 
         self.done_cb = done_cb
         self.item_switched_cb = item_switched_cb
+        self.item_added_cb = item_added_cb
         self.learning_request_cb = learning_request_cb
         self.pause_cb = pause_cb
         self.cancel_cb = cancel_cb
@@ -98,6 +102,10 @@ class ProgramItem(Item):
                                                image_path=icons_path + "success.svg")
         self.block_on_failure_btn = ButtonItem(self.scene(), 0, 0, "BTN", self, self.block_on_failure_btn_cb,
                                                image_path=icons_path + "failure.svg")
+        self.block_create_btn = ButtonItem(self.scene(), 0, 0, "BTN", self, self.block_create_btn_cb,
+                                           image_path=icons_path + "plus.svg")
+        self.block_delete_btn = ButtonItem(self.scene(), 0, 0, "BTN", self, self.block_delete_btn_cb,
+                                           image_path=icons_path + "delete.svg")
 
         # block "view" when in visualization
         self.program_visualize_btn = ButtonItem(self.scene(), 0, 0, translate(
@@ -107,30 +115,8 @@ class ProgramItem(Item):
         self.block_back_btn = ButtonItem(self.scene(), 0, 0, translate(
             "ProgramItem", "Back"), self, self.block_back_btn_cb)
 
-        bdata = []
-
-        self.blocks_map = {}  # map from indexes (key) to block_id (value)
-        self.blocks_map_rev = {}
-
-        for i in range(len(self.ph.get_program().blocks)):
-
-            bmsg = self.ph.get_program().blocks[i]
-
-            bdata.append(translate("ProgramItem", "Block %1\n%2\nSuccess: %3, failure: %4").arg(bmsg.id).arg(bmsg.name).
-                         arg(bmsg.on_success).arg(bmsg.on_failure))
-            idx = len(bdata) - 1
-            self.blocks_map[idx] = bmsg.id
-            self.blocks_map_rev[bmsg.id] = idx
-
-        self.blocks_list = ListItem(self.scene(), 0, 0, 0.2 - 2 * 0.005, bdata, self.block_selected_cb, parent=self)
-
-        for k, v in self.blocks_map.iteritems():
-
-            self._update_block(v)
-
-        y = self.title.mapToParent(self.title.boundingRect().bottomLeft()).y()
-        self.blocks_list.setPos(self.sp, y)
-        y += self.blocks_list._height() + self.sp
+        self.select_instruction = None
+        y = self._init_blocks_list()
 
         if visualize:
             self._place_childs_horizontally(y, self.sp, [
@@ -144,15 +130,17 @@ class ProgramItem(Item):
 
             # hide edit block buttons
             group_visible((self.block_finished_btn, self.block_edit_btn, self.block_on_failure_btn,
-                           self.block_on_success_btn), False)
+                           self.block_on_success_btns, self.block_create_btn, self.block_delete_btn), False)
 
         else:
             self._place_childs_horizontally(y, self.sp, [
-                self.block_edit_btn, self.block_on_success_btn, self.block_on_failure_btn, self.block_finished_btn])
+                self.block_edit_btn, self.block_on_success_btn, self.block_on_failure_btn,
+                self.block_finished_btn, self.block_create_btn, self.block_delete_btn])
 
             y += self.block_finished_btn._height() + self.sp
 
-            group_enable((self.block_edit_btn, self.block_on_failure_btn, self.block_on_success_btn), False)
+            group_enable((self.block_edit_btn, self.block_on_failure_btn,
+                          self.block_on_success_btn, self.block_delete_btn), False)
             # hide visualization block buttons
             group_visible((self.block_visualize_btn, self.program_visualize_btn, self.block_back_btn), False)
 
@@ -169,11 +157,16 @@ class ProgramItem(Item):
                                               image_path=icons_path + "failure.svg")
         self.item_finished_btn = ButtonItem(self.scene(), 0, 0, "BTN", self, self.item_finished_btn_cb,
                                             image_path=icons_path + "back.svg")
+        self.item_create_btn = ButtonItem(self.scene(), 0, 0, "BTN", self, self.item_create_btn_cb,
+                                          image_path=icons_path + "plus.svg")
+        self.item_delete_btn = ButtonItem(self.scene(), 0, 0, "BTN", self, self.item_delete_btn_cb,
+                                          image_path=icons_path + "delete.svg")
 
         self.items_list = None
 
         group_visible((self.item_finished_btn, self.item_run_btn,
-                       self.item_on_success_btn, self.item_on_failure_btn, self.item_edit_btn), False)
+                       self.item_on_success_btn, self.item_on_failure_btn, self.item_edit_btn,
+                       self.item_create_btn, self.item_delete_btn), False)
 
         # readonly (program running) "view"
         self.pr_pause_btn = ButtonItem(self.scene(), 0, 0, "BTN", self, self.pr_pause_btn_cb,
@@ -242,6 +235,19 @@ class ProgramItem(Item):
 
             self.title.set_content(translate("ProgramItem", "Program %1").arg(self.ph.get_program_id()),
                                    scale=1.2, color=color)
+
+    def select_block_item(self, block_id, item_id):
+
+        if block_id is not None:
+            idx = self.blocks_map_rev[block_id]
+            self.blocks_list.set_current_idx(idx, select=True)
+            self.block_selected_cb()
+            self.block_edit_btn_cb(self.block_edit_btn)
+
+            if item_id is not None:
+                self.items_list.set_current_idx(
+                    self.items_map_rev[item_id], True)
+                self.item_selected_cb()
 
     def pr_pause_btn_cb(self, btn):
 
@@ -344,7 +350,8 @@ class ProgramItem(Item):
             self.blocks_list.set_enabled(False, True)
 
             group_visible((self.block_finished_btn,
-                           self.block_edit_btn, self.block_on_failure_btn, self.block_on_success_btn), False)
+                           self.block_edit_btn, self.block_on_failure_btn, self.block_on_success_btn,
+                           self.block_create_btn, self.block_delete_btn), False)
             group_enable((self.pr_pause_btn, self.pr_cancel_btn), True)
 
         else:
@@ -387,7 +394,9 @@ class ProgramItem(Item):
                            self.block_visualize_btn,
                            self.program_visualize_btn,
                            self.block_back_btn,
-                           self.blocks_list),
+                           self.blocks_list,
+                           self.block_create_btn,
+                           self.block_delete_btn),
                           False)
 
         else:
@@ -451,6 +460,30 @@ class ProgramItem(Item):
         """Shows or hides buttons for visualization mode for HoloLens"""
         group_visible((self.vis_pause_btn, self.vis_stop_btn, self.vis_replay_btn, self.vis_back_btn), buttons_visible)
 
+    def _init_blocks_list(self):
+        bdata = []
+
+        self.blocks_map = {}  # map from indexes (key) to block_id (value)
+        self.blocks_map_rev = {}
+
+        for i in range(len(self.ph.get_program().blocks)):
+            bmsg = self.ph.get_program().blocks[i]
+
+            bdata.append(translate("ProgramItem", "Block %1\n%2\nSuccess: %3, failure: %4").arg(bmsg.id).arg(bmsg.name).
+                         arg(bmsg.on_success).arg(bmsg.on_failure))
+            idx = len(bdata) - 1
+            self.blocks_map[idx] = bmsg.id
+            self.blocks_map_rev[bmsg.id] = idx
+
+        self.blocks_list = ListItem(self.scene(), 0, 0, 0.2 - 2 * 0.005, bdata, self.block_selected_cb, parent=self)
+
+        for k, v in self.blocks_map.iteritems():
+            self._update_block(v)
+
+        y = self.title.mapToParent(self.title.boundingRect().bottomLeft()).y()
+        self.blocks_list.setPos(self.sp, y)
+        return y + self.blocks_list._height() + self.sp
+
     def _init_items_list(self):
 
         idata = []
@@ -468,7 +501,7 @@ class ProgramItem(Item):
             self.items_map_rev[item_id] = i
 
         self.items_list = ListItem(self.scene(
-        ), 0, 0, 0.2 - 2 * 0.005, idata, self.item_selected_cb, parent=self)
+        ), 0, 0, 0.2 - 2 * 0.005, idata, self.item_selected_cb, self.item_moved_cb, parent=self)
 
         for k, v in self.items_map.iteritems():
 
@@ -494,7 +527,8 @@ class ProgramItem(Item):
             group_enable(pr, True)
 
             group_visible((self.item_finished_btn, self.item_run_btn,
-                           self.item_on_success_btn, self.item_on_failure_btn, self.item_edit_btn), False)
+                           self.item_on_success_btn, self.item_on_failure_btn, self.item_edit_btn,
+                           self.item_create_btn, self.item_delete_btn), False)
 
             self.show_visualization_buttons(False)
 
@@ -520,13 +554,14 @@ class ProgramItem(Item):
             group_visible((self.pr_pause_btn, self.pr_cancel_btn), False)
 
             group_visible((self.item_run_btn,
-                           self.item_on_success_btn, self.item_on_failure_btn, self.item_edit_btn), False)
+                           self.item_on_success_btn, self.item_on_failure_btn, self.item_edit_btn,
+                           self.item_create_btn, self.item_delete_btn), False)
 
         # in learning state
         else:
 
             btns = (self.item_edit_btn, self.item_run_btn, self.item_on_success_btn, self.item_on_failure_btn,
-                    self.item_finished_btn)
+                    self.item_finished_btn, self.item_create_btn, self.item_delete_btn)
 
             self._place_childs_horizontally(y, self.sp, btns)
             y += max(btn._height() for btn in btns)
@@ -534,10 +569,11 @@ class ProgramItem(Item):
             y += self.sp
 
             group_visible((self.item_finished_btn, self.item_run_btn,
-                           self.item_on_success_btn, self.item_on_failure_btn, self.item_edit_btn), True)
-            self.item_finished_btn.setEnabled(True)
+                           self.item_on_success_btn, self.item_on_failure_btn, self.item_edit_btn,
+                           self.item_create_btn, self.item_delete_btn), True)
+            group_enable((self.item_finished_btn, self.item_create_btn), True)
             group_enable((self.item_run_btn, self.item_on_failure_btn,
-                          self.item_on_success_btn, self.item_on_failure_btn), False)
+                          self.item_on_success_btn, self.item_on_failure_btn, self.item_delete_btn), False)
 
             group_visible((self.pr_pause_btn, self.pr_cancel_btn), False)
 
@@ -549,11 +585,31 @@ class ProgramItem(Item):
         if self.item_switched_cb:
             self.item_switched_cb(self.block_id, self.item_id, blocks=False)
 
+    def _reinit_items_list(self):
+
+        self.scene().removeItem(self.items_list)
+        self._init_items_list()
+
+    def _init_instructions_list(self):
+
+        # init instruction selection
+
+        y = self.title.mapToParent(self.title.boundingRect().bottomLeft()).y()
+
+        self.select_instruction = SelectInstructionItem(
+            self.scene(),
+            self.position[0],
+            self.position[1],
+            self.ph,
+            block_id=self.block_id,
+            item_id=self.item_id,
+            instruction_selected_cb=self.instruction_selected_cb)
+
     def block_edit_btn_cb(self, btn):
 
         group_visible((self.block_finished_btn, self.block_edit_btn,
                        self.item_on_success_btn, self.block_on_failure_btn, self.block_on_success_btn,
-                       self.blocks_list), False)
+                       self.blocks_list, self.block_create_btn, self.block_delete_btn), False)
 
         self._init_items_list()
 
@@ -601,6 +657,14 @@ class ProgramItem(Item):
             self.block_edit_btn.set_enabled(True)
             self.block_visualize_btn.set_enabled(True)
 
+            if len(self.blocks_list.items) > 1:
+
+                self.block_delete_btn.set_enabled(True)
+
+            else:
+
+                self.block_delete_btn.set_enabled(False)
+
             if self.item_switched_cb:
 
                 self.item_switched_cb(self.block_id, None, blocks=True)
@@ -612,6 +676,7 @@ class ProgramItem(Item):
             self.block_id = None
             self.item_id = None
             self.block_edit_btn.set_enabled(False)
+            self.block_delete_btn.set_enabled(False)
             self.block_on_failure_btn.set_enabled(False)
             self.block_on_success_btn.set_enabled(False)
             self.block_visualize_btn.set_enabled(False)
@@ -631,14 +696,20 @@ class ProgramItem(Item):
 
         if not self.editing_item:
 
-            of = self.ph.get_id_on_failure(*self.cid)
-            os = self.ph.get_id_on_success(*self.cid)
+            if self.item_id is not None:
+                of = self.ph.get_id_on_failure(*self.cid)
+                os = self.ph.get_id_on_success(*self.cid)
 
-            self.item_on_failure_btn.set_enabled(of[0] != 0 and not (of[0] == self.block_id and of[1] == self.item_id))
-            self.item_on_success_btn.set_enabled(os[0] != 0 and not (os[0] == self.block_id and os[1] == self.item_id))
+                self.item_on_failure_btn.set_enabled(of[0] != 0 and not (
+                    of[0] == self.block_id and of[1] == self.item_id))
+                self.item_on_success_btn.set_enabled(os[0] != 0 and not (
+                    os[0] == self.block_id and os[1] == self.item_id))
 
-            self.item_run_btn.set_enabled(self._item_runnable())
-            self.item_edit_btn.set_enabled(self._item_editable())
+                self.item_run_btn.set_enabled(self._item_runnable())
+                self.item_edit_btn.set_enabled(self._item_editable())
+                self.item_delete_btn.set_enabled(True)
+            else:
+                group_enable((self.item_finished_btn, self.item_create_btn), True)
 
         else:
 
@@ -690,6 +761,21 @@ class ProgramItem(Item):
         if self.item_switched_cb is not None:
             self.item_switched_cb(*self.cid)
 
+    def item_moved_cb(self, up=True):
+
+        # print ("self.items_list.selected_item_idx", self.items_list.selected_item_idx)
+
+        if self.items_list.selected_item_idx is not None:
+
+            if up:
+                self.ph.move_item_up(self.block_id, self.items_list.selected_item_idx)
+
+            else:
+                self.ph.move_item_down(self.block_id, self.items_list.selected_item_idx)
+
+            self.scene().removeItem(self.items_list)
+            self._init_items_list()
+
     def block_on_failure_btn_cb(self, btn):
 
         self.set_active(self.ph.get_block_on_failure(self.block_id), None)
@@ -697,6 +783,28 @@ class ProgramItem(Item):
     def block_on_success_btn_cb(self, btn):
 
         self.set_active(self.ph.get_block_on_success(self.block_id), None)
+
+    def block_create_btn_cb(self, btn):
+
+        self.ph.add_block(self.block_id)
+
+        self.scene().removeItem(self.blocks_list)
+
+        self._init_blocks_list()
+
+        return
+
+    def block_delete_btn_cb(self, btn):
+
+        self.ph.delete_block(self.block_id)
+
+        self.scene().removeItem(self.blocks_list)
+
+        self._init_blocks_list()
+
+        self.block_id = None
+
+        return
 
     def block_finished_btn_cb(self, btn):
 
@@ -707,13 +815,20 @@ class ProgramItem(Item):
     def item_finished_btn_cb(self, btn):
 
         # go back to blocks view
-        group_visible((self.block_finished_btn, self.block_edit_btn,
-                       self.block_on_failure_btn, self.block_on_success_btn, self.blocks_list), True)
-        group_visible((self.item_finished_btn, self.item_run_btn,
-                       self.item_on_success_btn, self.item_on_failure_btn, self.item_edit_btn), False)
+        group_visible((self.block_finished_btn, self.block_edit_btn, self.block_on_failure_btn,
+                       self.block_on_success_btn, self.block_create_btn, self.block_delete_btn, self.blocks_list), True)
+        group_visible((self.item_finished_btn,
+                       self.item_run_btn,
+                       self.item_on_success_btn,
+                       self.item_on_failure_btn,
+                       self.item_edit_btn,
+                       self.item_create_btn,
+                       self.item_delete_btn),
+                      False)
         self.block_selected_cb()  # TODO extract method to set buttons to proper state
         self.blocks_list.setEnabled(True)
         self.block_finished_btn.setEnabled(True)
+        self.block_create_btn.setEnabled(True)
 
         self.scene().removeItem(self.items_list)
         self.items_list = None
@@ -739,6 +854,55 @@ class ProgramItem(Item):
         self.set_active(*of)
         if self.item_switched_cb is not None:
             self.item_switched_cb(*of)
+
+    def item_create_btn_cb(self, btn):
+
+        self.setVisible(False)
+        self._init_instructions_list()
+
+        return
+
+    def item_delete_btn_cb(self, btn):
+
+        self.ph.delete_item(self.block_id, self.item_id)
+
+        self.item_id = None
+
+        self.scene().removeItem(self.items_list)
+        self._init_items_list()
+
+        return
+
+    def instruction_selected_cb(self):
+
+        instruction_id = self.select_instruction.selected_instruction_id
+        self.handle_new_instruction(instruction_id)
+
+    def handle_new_instruction(self, instruction_id):
+
+        new_id = None
+        if instruction_id is not None:
+
+            new_id = self.ph.add_item(self.block_id, instruction_id, self.item_id)
+
+        self.setVisible(True)
+        if self.select_instruction is not None:
+            self.select_instruction.setVisible(False)
+
+        self._handle_item_btns()
+
+        if instruction_id is not None:
+
+            self.scene().removeItem(self.items_list)
+            self._init_items_list()
+
+            if self.item_added_cb is not None:
+                self.item_added_cb()
+
+            self.items_list.set_current_idx(self.items_map_rev[new_id], True)
+            self.item_selected_cb()
+
+        return new_id
 
     def item_run_btn_cb(self, btn):
 
@@ -776,13 +940,16 @@ class ProgramItem(Item):
                 self.editing_item = True
                 self.item_edit_btn.set_image(icons_path + "save.svg")
                 group_enable((self.item_finished_btn, self.items_list,
-                              self.item_on_failure_btn, self.item_on_success_btn), False)
+                              self.item_on_failure_btn, self.item_on_success_btn,
+                              self.item_create_btn, self.item_delete_btn), False)
 
             else:
 
                 self.editing_item = False
                 self.item_edit_btn.set_image(icons_path + "edit.svg")
-                group_enable((self.item_finished_btn, self.items_list), True)
+                group_enable((self.item_finished_btn,
+                              self.item_create_btn, self.item_delete_btn,
+                              self.items_list), True)
                 self._update_learned()
 
             self._handle_item_btns()

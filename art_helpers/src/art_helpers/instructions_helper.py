@@ -2,6 +2,8 @@
 
 import rospy
 import importlib
+from art_utils.art_msgs_functions import obj_type, wait_item, feeder_item, grid_item, drill_item, place_item,\
+    item, polygon_item, visual_inspection_item
 
 
 class InstructionsHelperException(Exception):
@@ -185,3 +187,25 @@ class InstructionsHelper(object):
     def requires_learning(self, ins):
 
         return ins in self.properties.using_object | self.properties.using_polygon | self.properties.using_pose
+
+    @staticmethod
+    def get_instruction_msgs(item_type, it_id,
+                             on_success=0, on_failure=0, obj_type="", ref_id=[],
+                             name="", objects=2, holes=2, drill_obj_type=[""]):
+
+        if item_type == "PickFromPolygon":
+            return polygon_item(it_id, on_success, on_failure, obj_type, ref_id)
+        elif item_type == "PickFromFeeder":
+            return feeder_item(it_id, on_success, on_failure, obj_type, ref_id)
+        elif item_type == "VisualInspection":
+            return visual_inspection_item(it_id, ref_id, on_success, on_failure)
+        elif item_type == "PlaceToPose":
+            return place_item(it_id, ref_id, on_success, on_failure, name)
+        elif item_type == "PlaceToGrid":
+            return grid_item(it_id, ref_id, on_success, on_failure, objects)
+        elif item_type == "DrillPoints":
+            return drill_item(it_id, ref_id, on_success, on_failure, holes, obj_type=drill_obj_type)
+        elif item_type == "WaitUntilUserFinishes":
+            return wait_item(it_id, ref_id, on_success, on_failure)
+        else:
+            return item(it_id, item_type, on_success, on_failure, ref_id)

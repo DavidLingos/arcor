@@ -540,8 +540,6 @@ class ArtBrain(object):
         self.block_id = self.state_manager.state.block_id
 
     def state_learning_run(self, event):
-        if self.state_manager.state.system_state != InterfaceState.STATE_LEARNING:
-            self.state_manager.set_system_state(InterfaceState.STATE_LEARNING)
         rospy.logdebug('Current state: state_learning_run')
 
     def state_learning_step_error(self, event):
@@ -582,7 +580,6 @@ class ArtBrain(object):
 
     def state_learning_done(self, event):
         rospy.logdebug('Current state: state_learning_done')
-        self.robot.get_ready()
         self.fsm.done()
         pass
 
@@ -650,12 +647,6 @@ class ArtBrain(object):
 
     def program_start_timer_cb(self, event):
         self.fsm.program_start()
-
-    def learning_activated_timer_cb(self, event):
-        try:
-            self.instruction_fsm[self.state_manager.state.program_current_item.type].learning_activated()
-        except KeyError:
-            self.instruction_fsm["GetReady"].learning_activated()
 
     def program_resume_timer_cb(self, event):
         self.state_manager.set_system_state(
@@ -864,6 +855,7 @@ class ArtBrain(object):
         return resp
 
     def learning_start_cb(self, req):
+
         resp = ProgramIdTriggerResponse()
         resp.success = False
 
@@ -886,8 +878,15 @@ class ArtBrain(object):
             resp.error = 'Cannot get program.'
             return resp
 
+        if self.ph.is_empty():
+            self.state_manager.set_system_state(InterfaceState.STATE_LEARNING)
+            return
+
         rospy.logdebug('Starting learning')
-        self.state_manager.update_program_item(req.program_id, 0, auto_send=False)  # block_id 0 -> show blocks
+        (self.block_id, item_id) = self.ph.get_first_item_id()
+        self.state_manager.update_program_item(
+            req.program_id, self.block_id, self.ph.get_item_msg(
+                self.block_id, item_id), auto_send=False)
         self.state_manager.set_system_state(InterfaceState.STATE_LEARNING)
         resp.success = True
         self.fsm.learning_start()
@@ -951,24 +950,13 @@ class ArtBrain(object):
                                    msg,  # type: InterfaceState
                                    flags):
         if msg.interface_id != InterfaceState.BRAIN_ID:
-
             if msg.system_state == InterfaceState.STATE_LEARNING:
-
-                # not need to save program while user just switches through instructions (ro mode)
-                if msg.block_id and msg.program_current_item.id and state.edit_enabled:
-
-                    self.ph.set_item_msg(msg.block_id, msg.program_current_item)
-                    self.art.store_program(self.ph.get_program())
-
+                self.ph.set_item_msg(msg.block_id, msg.program_current_item)
                 rospy.set_param("program_id", self.ph.get_program_id())
                 rospy.set_param("block_id", self.block_id)
                 rospy.set_param("item_id", msg.program_current_item.id)
-
-                if self.fsm.is_learning_run and not msg.edit_enabled:
-                    rospy.Timer(rospy.Duration(
-                                0, 50000000),  # 50ms
-                                self.learning_activated_timer_cb,
-                                oneshot=True)
+                # self.art.store_program(self.ph.get_program())
+        pass
 
     def projectors_calibrated_cb(self, msg):
 
@@ -1028,20 +1016,23 @@ class ArtBrain(object):
         instruction = self.state_manager.state.program_current_item  # type: ProgramItem
         self.instruction = instruction
 
-        self.state_manager.set_edit_enabled(False)
+        self.state_manager.state.edit_enabled = False
+        self.state_manager.send()
 
-        if goal.request in (LearningRequestGoal.GET_READY, LearningRequestGoal.GET_READY_WITHOUT_ROBOT):
+        if goal.request == LearningRequestGoal.GET_READY:
 
-            self.instruction_fsm[instruction.type].learning(
-                no_robot=(goal.request == LearningRequestGoal.GET_READY_WITHOUT_ROBOT))  # TODO check and handle errors
+            self.state_manager.state.edit_enabled = True
 
-            self.state_manager.set_edit_enabled(True)
+            self.instruction_fsm[instruction.type].learning()  # TODO check and handle errors
+
+            self.state_manager.state.edit_enabled = True
+            self.state_manager.send()
             self.as_learning_request.set_succeeded(result)
 
         elif goal.request == LearningRequestGoal.EXECUTE_ITEM:
             self.ph.set_item_msg(
                 self.state_manager.state.block_id, instruction)
-            self.state_manager.set_system_state(InterfaceState.STATE_LEARNING_RUNNING)
+
             self.instruction_fsm[instruction.type].learning_run()  # TODO check and handle errors
             self.as_learning_request.set_succeeded(result)
 

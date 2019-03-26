@@ -10,6 +10,7 @@ using_object:
   - PickFromFeeder
   - PickFromPolygon
   - DrillPoints
+  - VisualInspection
   - PlaceToGrid
   - PlaceToPose
   - PlaceToContainer
