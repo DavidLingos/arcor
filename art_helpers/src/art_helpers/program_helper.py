@@ -693,16 +693,17 @@ class ProgramHelper(object):
         items = block.items
         item_idx = self._cache[block_id]["items"][item_id]["idx"]
 
-        for i in range(item_idx, len(items)):
+        for i in range(0, len(items)):
 
-            items[i].id -= 1
-            if items[i].on_success != 1:
-                items[i].on_success -= 1
+            if i >= item_idx:
+                items[i].id -= 1
+                if items[i].on_success != 1:
+                    items[i].on_success -= 1
+            if items[i].on_failure == item_id:
+                items[i].on_failure = 0
 
         if item_idx == len(items) - 1 and len(items) > 1:
             items[item_idx - 1].on_success = 1
-
-        rospy.logdebug(str(block_idx) + " " + str(item_idx))
 
         del self._prog.blocks[block_idx].items[item_idx]
 

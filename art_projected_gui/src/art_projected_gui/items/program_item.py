@@ -164,9 +164,14 @@ class ProgramItem(Item):
         self.item_tree_btn = ButtonItem(self.scene(), 0, 0, "BTN", self, self.item_tree_btn_cb,
                                         image_path=icons_path + "visualize.svg")
 
+        self.show_background = True
         self.items_list = None
         self.item_on_success_clicked = False
         self.item_on_failure_clicked = False
+        self.item_btns = (self.item_edit_btn, self.item_run_btn,
+                          self.item_on_success_btn, self.item_on_failure_btn,
+                          self.item_finished_btn, self.item_create_btn,
+                          self.item_delete_btn, self.item_tree_btn)
 
         group_visible((self.item_finished_btn, self.item_run_btn,
                        self.item_on_success_btn, self.item_on_failure_btn, self.item_edit_btn,
@@ -526,6 +531,7 @@ class ProgramItem(Item):
 
             idata.append(self.get_text_for_item(self.block_id, item_id))
             tree_data.append([
+                i,
                 item_id,
                 self.get_item_on_success(self.block_id, item_id),
                 self.get_item_on_failure(self.block_id, item_id)
@@ -535,7 +541,9 @@ class ProgramItem(Item):
 
         self.items_list = ItemsTreeListItem(self.scene(
         ), 0, 0, 0.2 - 2 * 0.005, idata, tree_data,
-            self.item_selected_cb, self.block_item_moved_cb, parent=self)
+            visualization_finished_cb=self.item_tree_visualization_finished,
+            item_selected_cb=self.item_selected_cb,
+            item_moved_cb=self.block_item_moved_cb, parent=self)
 
         for k, v in self.items_map.iteritems():
 
@@ -787,29 +795,29 @@ class ProgramItem(Item):
 
         return True
 
-    def item_selected_cb(self):
-
-        # print ("self.items_list.selected_item_idx", self.items_list.selected_item_idx)
+    def item_selected_cb(self, visualize=False):
 
         if self.items_list.selected_item_idx is not None:
 
             new_id = self.items_map[self.items_list.selected_item_idx]
 
-            if self.item_on_success_clicked:
-                self.item_on_success_clicked = False
-                self.item_on_success_btn.set_pressed(False)
-                self.ph.set_on_success(self.block_id, self.item_id, new_id)
-                self._reinit_items_list()
+            if not visualize:
+                if self.item_on_success_clicked:
+                    self.item_on_success_clicked = False
+                    self.item_on_success_btn.set_pressed(False)
+                    self.ph.set_on_success(self.block_id, self.item_id, new_id)
+                    self._reinit_items_list()
 
-            if self.item_on_failure_clicked:
-                self.item_on_failure_clicked = False
-                self.item_on_failure_btn.set_pressed(False)
-                self.ph.set_on_failure(self.block_id, self.item_id, new_id)
-                self._reinit_items_list()
+                if self.item_on_failure_clicked:
+                    self.item_on_failure_clicked = False
+                    self.item_on_failure_btn.set_pressed(False)
+                    self.ph.set_on_failure(self.block_id, self.item_id, new_id)
+                    self._reinit_items_list()
 
             self.item_id = new_id
 
-            self._handle_item_btns()
+            if not visualize:
+                self._handle_item_btns()
 
             self._update_learned()
 
@@ -968,7 +976,19 @@ class ProgramItem(Item):
 
     def item_tree_btn_cb(self, btn):
 
+        self.show_background = False
+        group_visible(self.item_btns, False)
+        self.title.setVisible(False)
         self.items_list.show_items_tree()
+        return
+
+    def item_tree_visualization_finished(self):
+
+        self.show_background = True
+        self._reinit_items_list()
+        group_visible(self.item_btns, True)
+        group_enable((self.item_create_btn, self.item_finished_btn, self.item_tree_btn), True)
+        self.title.setVisible(True)
         return
 
     def instruction_selected_cb(self):
@@ -1214,7 +1234,7 @@ class ProgramItem(Item):
 
     def paint(self, painter, option, widget):
 
-        if not self.scene():
+        if not self.scene() or not self.show_background:
             return
 
         painter.setClipRect(option.exposedRect)
