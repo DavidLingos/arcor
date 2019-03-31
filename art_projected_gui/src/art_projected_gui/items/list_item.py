@@ -141,7 +141,7 @@ class ListItem(Item):
                 self.items[idx].setPos(0, y)
                 self.items[idx].setVisible(True)
                 vspace += self.sp + h
-            displayed.append(idx)
+                displayed.append(idx)
 
         if self.isEnabled():
 

@@ -37,7 +37,7 @@ class SelectInstructionItem(Item):
             parent=obj if isinstance(obj, Item) else None)
 
         self.w = self.m2pix(0.2)
-        self.h = self.m2pix(0.25)
+        self.h = self.m2pix(0.25) if obj is None else self.m2pix(0.02)
         self.sp = self.m2pix(0.005)
 
         self.instruction_list = None

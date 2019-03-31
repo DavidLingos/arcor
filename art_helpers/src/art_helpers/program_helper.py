@@ -228,10 +228,20 @@ class ProgramHelper(object):
 
     def get_first_item_id(self, block_id=None):
 
+        if block_id is not None:
+            items = self._cache[block_id]["items"]
+            if items:
+                item_id = min(items, key=items.get)
+            else:
+                block_id = None
+
         if block_id is None:
-            block_id = self.get_first_block_id()
-        items = self._cache[block_id]["items"]
-        item_id = min(items, key=items.get)
+            for i in self._cache.keys():
+                items = self._cache[i]["items"]
+                if items:
+                    block_id = i
+                    item_id = min(items, key=items.get)
+
         return block_id, item_id
 
     def get_item_msg(self, block_id, item_id):
@@ -420,6 +430,10 @@ class ProgramHelper(object):
 
     def program_learned(self):
 
+        if self.is_empty():
+
+            return False
+
         blocks = self.get_block_ids()
 
         for block_id in blocks:
@@ -560,39 +574,33 @@ class ProgramHelper(object):
     def get_new_program_id(self):
 
         headers = self.art.get_program_headers()
+        ids = []
 
-        return max(headers, key=lambda x: x.id).id + 1
+        for h in headers:
+            ids.append(h.id)
+
+        for i in range(1, 2 ** 16 - 1):
+            if i not in ids:
+                return i
+
+        return None
 
     def add_block(self, previous_block_id=None):
 
         previous_block_idx = len(self._prog.blocks) - 1
-        on_success = 1
+        on_success = self._prog.blocks[0].id
 
         if previous_block_id is not None:
 
             previous_block_idx = self._get_block_on(previous_block_id, "idx")
             if previous_block_idx < len(self._prog.blocks) - 1:
-                on_success = self._prog.blocks[previous_block_idx].on_success + 1
+                on_success = self._prog.blocks[previous_block_idx].on_success
 
         pb = ProgramBlock()
         pb.id = len(self._prog.blocks) + 1
         pb.name = "Program block " + str(pb.id)
         pb.on_success = on_success
         pb.on_failure = 0
-
-        # change ids and names if not last
-        if previous_block_idx != len(self._prog.blocks) - 1:
-
-            pb.id = previous_block_idx + 2
-            pb.name = "Program block " + str(pb.id)
-
-            for i in range(previous_block_idx + 1, len(self._prog.blocks)):
-
-                block = self._prog.blocks[i]
-                block.id += 1
-                block.name = "Program block " + str(block.id)
-                if block.on_success != 1:
-                    block.on_success += 1
 
         self._prog.blocks[previous_block_idx].on_success = pb.id
 
@@ -605,16 +613,16 @@ class ProgramHelper(object):
 
         block_idx = self._get_block_on(block_id, "idx")
 
-        for i in range(block_idx + 1, len(self._prog.blocks)):
-
+        self._prog.blocks[block_idx - 1].on_success = \
+            self._prog.blocks[block_idx].on_success
+        for i in range(0, len(self._prog.blocks)):
             block = self._prog.blocks[i]
-            block.id -= 1
-            block.name = "Program block " + str(block.id)
-            if block.on_success != 1:
-                block.on_success -= 1
 
-        if block_idx == len(self._prog.blocks) - 1:
-            self._prog.blocks[block_idx - 1].on_success = 1
+            if block.id > block_id:
+                block.id -= 1
+                block.name = "Program block " + str(block.id)
+            if block.on_success > block_id:
+                block.on_success -= 1
 
         del self._prog.blocks[block_idx]
 
@@ -629,16 +637,16 @@ class ProgramHelper(object):
         previous_item_idx = len(block.items) - 1
         on_success = 1
 
-        if previous_item_id is not None:
-
-            block_id, previous_item_idx = self._get_item_on(block_id, previous_item_id, "idx")
-            if previous_item_idx < len(items) - 1:
-                on_success = items[previous_item_idx].on_success + 1
+        # if previous_item_id is not None:
+        #
+        #     block_id, previous_item_idx = self._get_item_on(block_id, previous_item_id, "idx")
+        #     if previous_item_idx < len(items) - 1:
+        #         on_success = items[previous_item_idx].on_success + 1
 
         item_msg = self.ih.get_instruction_msgs(
             item_type,
             len(items) + 1,
-            name="Block_" + str(block_id) + "Item_" + str(previous_item_idx)
+            name=item_type + str(len(items) + 1)
         )
         item_msg.on_success = on_success
 
@@ -683,13 +691,16 @@ class ProgramHelper(object):
         block_idx = self._get_block_on(block_id, "idx")
         block = self._prog.blocks[block_idx]
         items = block.items
-        block_id, item_idx = self._get_item_on(block_id, item_id, "idx")
+        item_idx = self._cache[block_id]["items"][item_id]["idx"]
 
-        for i in range(item_idx, len(items)):
+        for i in range(0, len(items)):
 
-            items[i].id -= 1
-            if items[i].on_success != 1:
-                items[i].on_success -= 1
+            if i >= item_idx:
+                items[i].id -= 1
+                if items[i].on_success != 1:
+                    items[i].on_success -= 1
+            if items[i].on_failure == item_id:
+                items[i].on_failure = 0
 
         if item_idx == len(items) - 1 and len(items) > 1:
             items[item_idx - 1].on_success = 1
@@ -699,30 +710,59 @@ class ProgramHelper(object):
         self.art.store_program(self._prog)
         self.load(self._prog)
 
+    def set_on_success(self, block_id, item_id, item_on_success_id):
+
+        item_msg = self.get_item_msg(block_id, item_id)
+
+        item_msg.on_success = item_on_success_id
+
+        self.set_item_msg(block_id, item_msg)
+
+        self.art.store_program(self._prog)
+        self.load(self._prog)
+
+        return
+
+    def set_on_failure(self, block_id, item_id, item_on_failure_id):
+
+        item_msg = self.get_item_msg(block_id, item_id)
+
+        item_msg.on_failure = item_on_failure_id
+
+        self.set_item_msg(block_id, item_msg)
+
+        self.art.store_program(self._prog)
+        self.load(self._prog)
+
+        return
+
     def get_object_instructions(self, block_id, object_type=None, previous_item_id=None):
 
         instructions = self.ih.known_instructions()
 
+        allowed_items = self.get_allowed_new_items(block_id, previous_item_id)
+
         if object_type is None:
 
-            return ["PlaceToPose"]
+            # return ["PlaceToPose"]
             return list(set(["PlaceToPose"])
                         & set(self.get_allowed_new_items(block_id, previous_item_id)))
 
         if object_type.container:
-            return ["PlaceToContainer"]
+
+            # return ["PlaceToContainer"]
             return list(set(["PlaceToContainer"])
                         & set(self.get_allowed_new_items(block_id, previous_item_id)))
 
         return list(filter(lambda x:
                            x in self.ih.properties.using_object
-                           and x not in self.ih.properties.place, instructions))
+                           and x not in self.ih.properties.place
+                           and x in allowed_items, instructions))
 
     def get_allowed_new_items(self, block_id, previous_item_id=None):
 
         # if True place instructions are removed
         remove_place = True
-        remove_pick = False
 
         block_idx = self._get_block_on(block_id, "idx")
 
@@ -735,16 +775,12 @@ class ProgramHelper(object):
 
             block_id, previous_item_idx = self._get_item_on(block_id, previous_item_id, "idx")
 
-            remove_place = True
-
             for i in range(previous_item_idx, -1, -1):
 
                 item = self._prog.blocks[block_idx].items[i]
 
-                any_ref = any((lambda: item.id in i.ref_id)() for i in self._prog.blocks[block_idx].items)
-                if item.type in self.ih.properties.pick and not any_ref:
+                if item.type in self.ih.properties.pick:
                     remove_place = False
-                    remove_pick = True
 
         if remove_place:
             for t in self.ih.properties.place:
@@ -753,49 +789,73 @@ class ProgramHelper(object):
             for t in self.ih.properties.ref_to_pick:
                 instructions.remove(t)
 
-        if remove_pick:
-            for t in self.ih.properties.pick:
-                instructions.remove(t)
-
         return instructions
 
-    def move_item_down(self, block_id, item_idx):
+    def move_block_item_down(self, block_id, item_id=None):
+        block_idx = self._cache[block_id]["idx"]
+        item_idx = None if item_id is None else \
+            self._cache[block_id]["items"][item_id]["idx"]
+
+        if item_idx is not None:
+            if len(self._prog.blocks[block_idx].items) > item_idx + 1:
+
+                self._prog.blocks[block_idx].items[item_idx], self._prog.blocks[block_idx].items[item_idx + 1] = \
+                    self._prog.blocks[block_idx].items[item_idx + 1], self._prog.blocks[block_idx].items[item_idx]
+
+        elif block_idx < len(self._prog.blocks) - 1:
+
+            success = self._prog.blocks[block_idx].id
+            if block_idx > 0:
+                self._prog.blocks[block_idx - 1].on_success = self._prog.blocks[block_idx + 1].id
+            else:
+                self._prog.blocks[len(self._prog.blocks) - 1].on_success = self._prog.blocks[1].id
+            self._prog.blocks[block_idx].on_success = \
+                self._prog.blocks[block_idx + 1].on_success if len(self._prog.blocks) > 2 \
+                else self._prog.blocks[block_idx + 1].id
+            self._prog.blocks[block_idx + 1].on_success = success
+
+            self._prog.blocks[block_idx], self._prog.blocks[block_idx + 1] = \
+                self._prog.blocks[block_idx + 1], self._prog.blocks[block_idx]
+
+        self.art.store_program(self._prog)
+        self.load(self._prog)
+
+    def move_block_item_up(self, block_id, item_id=None):
+        block_idx = self._cache[block_id]["idx"]
+        item_idx = None if item_id is None else \
+            self._cache[block_id]["items"][item_id]["idx"]
+
+        if item_idx is not None:
+            if item_idx > 0:
+
+                self._prog.blocks[block_idx].items[item_idx], self._prog.blocks[block_idx].items[item_idx - 1] = \
+                    self._prog.blocks[block_idx].items[item_idx - 1], self._prog.blocks[block_idx].items[item_idx]
+
+        if block_idx > 0:
+            success = self._prog.blocks[block_idx - 1].id
+            if block_idx == 1:
+                self._prog.blocks[len(self._prog.blocks) - 1].on_success = self._prog.blocks[block_idx].id
+            if block_idx > 1:
+                self._prog.blocks[block_idx - 2].on_success = self._prog.blocks[block_idx].id
+
+            self._prog.blocks[block_idx - 1].on_success = self._prog.blocks[block_idx].on_success
+
+            self._prog.blocks[block_idx].on_success = success
+
+            self._prog.blocks[block_idx], self._prog.blocks[block_idx - 1] = \
+                self._prog.blocks[block_idx - 1], self._prog.blocks[block_idx]
+
+        self.art.store_program(self._prog)
+        self.load(self._prog)
+
+    def item_can_be_deleted(self, block_id, item_id):
+
         block_idx = self._cache[block_id]["idx"]
 
-        if len(self._prog.blocks[block_idx].items) > item_idx + 1:
+        for i in range(0, len(self._prog.blocks[block_idx].items)):
 
-            self._prog.blocks[block_idx].items[item_idx], self._prog.blocks[block_idx].items[item_idx + 1] = \
-                self._prog.blocks[block_idx].items[item_idx + 1], self._prog.blocks[block_idx].items[item_idx]
+            if item_id in self._prog.blocks[block_idx].items[i].ref_id:
 
-            self.art.store_program(self._prog)
-            self.load(self._prog)
+                return False
 
-    def move_item_up(self, block_id, item_idx):
-        block_idx = self._cache[block_id]["idx"]
-
-        if item_idx > 0:
-
-            self._prog.blocks[block_idx].items[item_idx], self._prog.blocks[block_idx].items[item_idx - 1] = \
-                self._prog.blocks[block_idx].items[item_idx - 1], self._prog.blocks[block_idx].items[item_idx]
-
-            self.art.store_program(self._prog)
-            self.load(self._prog)
-
-    # def join_blocks(self, block_id1, block_id2):
-    #     block_idx1 = self._get_block_on(block_id1, "idx")
-    #     block_idx2 = self._get_block_on(block_id2, "idx")
-    #     self._prog.blocks[block_idx1].items += self._prog.blocks[block_idx2].items
-    #     del self._prog.blocks[block_idx2]
-    #
-    # def split_instructions(self, block_id, item_id1, item_id2):
-    #     block_idx = self._cache[block_id]["idx"]
-    #     item_idx1 = self._cache[block_id]["items"][item_id1]["idx"]
-    #     item_idx2 = self._cache[block_id]["items"][item_id2]["idx"]
-    #     if item_idx2 < item_idx1:
-    #         item_idx1, item_idx2 = item_idx2, item_idx1
-    #     block = self._prog.blocks[block_idx]
-    #     new_block = deepcopy(block)
-    #     new_block.items = deepcopy(block.items[item_idx2:])
-    #     new_block.id = max(self.get_block_ids()) + 1
-    #     del block.items[item_idx2:]
-    #     self._prog.blocks.insert(block_idx + 1, new_block)
+        return True

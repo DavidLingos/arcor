@@ -19,6 +19,7 @@ class ProgramListItem(Item):
             y,
             program_headers,
             learned_dict,
+            empty_dict,
             selected_program_id=None,
             program_selected_cb=None,
             program_selection_changed_cb=None):
@@ -28,6 +29,7 @@ class ProgramListItem(Item):
 
         self.program_headers = program_headers
         self.learned_dict = learned_dict
+        self.empty_dict = empty_dict
         self.program_selected_cb = program_selected_cb
         self.program_selection_changed_cb = program_selection_changed_cb
 
@@ -89,8 +91,7 @@ class ProgramListItem(Item):
             self.list.set_current_idx(self.map_from_program_id_to_idx[selected_program_id])
 
         sp = self.m2pix(0.005)
-        # h = title.mapToParent(title.boundingRect().bottomLeft()).y() + sp
-        h = 0
+        h = title.mapToParent(title.boundingRect().bottomLeft()).y() + sp
 
         self.list.setPos(sp, h)
         h += self.list._height()
@@ -141,7 +142,10 @@ class ProgramListItem(Item):
             self.delete_btn.set_enabled(True)
 
             if self.program_selection_changed_cb:
-                self.program_selection_changed_cb(ph.id, ro=ph.readonly, learned=self.learned_dict[ph.id])
+                self.program_selection_changed_cb(ph.id,
+                                                  ro=ph.readonly,
+                                                  learned=self.learned_dict[ph.id],
+                                                  empty=self.empty_dict[ph.id])
 
     def get_current_header(self):
 
