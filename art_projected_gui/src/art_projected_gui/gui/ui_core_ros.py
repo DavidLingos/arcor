@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from art_projected_gui.gui import UICore
+from art_projected_gui.gui.ui_core import UICore
 from PyQt4 import QtCore
 import rospy
 from art_msgs.msg import InstancesArray, InterfaceState, LearningRequestAction,\

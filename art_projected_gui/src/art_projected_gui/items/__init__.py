@@ -5,7 +5,6 @@ from place_item import PlaceItem
 from polygon_item import PolygonItem
 from posestamped_cursor_item import PoseStampedCursorItem
 from program_item import ProgramItem
-from program_create_item import ProgramCreateItem
 from square_grid_item import SquareItem
 from select_instruction_item import SelectInstructionItem
 from touch_points_item import TouchPointsItem
