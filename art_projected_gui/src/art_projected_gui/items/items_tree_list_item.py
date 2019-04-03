@@ -16,6 +16,7 @@ class ItemsTreeListItem(ListItem):
 
     def __init__(self, scene, x, y, w, data,
                  tree_data,
+                 program_helper,
                  visualization_finished_cb=None,
                  item_selected_cb=None,
                  item_moved_cb=None, parent=None):
@@ -29,8 +30,11 @@ class ItemsTreeListItem(ListItem):
             y,
             w,
             data,
+            movable_items=True,
             item_selected_cb=item_selected_cb,
             item_moved_cb=item_moved_cb,
+            item_mouse_release_cb=self.item_mouse_release,
+            item_mouse_move_cb=self.item_mouse_move,
             parent=parent)
 
         # Array of arrays with indexes:
@@ -42,6 +46,9 @@ class ItemsTreeListItem(ListItem):
         self.visualize = False
         self.selected_item_idx = None
         self.lines = []
+        self.ph = program_helper
+        self.sp_x = 50
+        self.sp_y = 3 * self.sp
 
         self.visualization_finished_cb = visualization_finished_cb
 
@@ -77,6 +84,31 @@ class ItemsTreeListItem(ListItem):
 
             self.item_selected_cb(self.visualize)
 
+    def item_mouse_release(self, button, point):
+
+        previous_item = None
+        for it in self.items:
+            if not it.isVisible() or it == button:
+                continue
+            rospy.logdebug(it.pos().y())
+            rospy.logdebug(point.y())
+            if it.pos().y() <= point.y():
+                previous_item = it
+            else:
+                break
+        if previous_item is not None:
+            idx = self.items.index(previous_item)
+
+        return
+
+    def item_mouse_move(self, button, point):
+
+        if point.y() == 0:
+            self.set_current_idx(self.get_current_idx() - 1, moving_item=button)
+        elif point.y() == self.pos().y() + self.h - 3 * button.h:
+            self.set_current_idx(self.get_current_idx() + 1, moving_item=button)
+        return
+
     def show_items_tree(self):
         if len(self.tree_data) == 0:
 
@@ -108,7 +140,7 @@ class ItemsTreeListItem(ListItem):
         item.setPos(x, y)
         processed_items.append(tree_item[1])
         if tree_item[2] not in processed_items:
-            new_x = x
+            new_x = x + self.sp_x
             if tree_item[3] not in processed_items and \
                     tree_item[3] != 0 and \
                     len(list(filter(lambda i:
@@ -120,11 +152,11 @@ class ItemsTreeListItem(ListItem):
             self.place_tree_item(
                 new_item,
                 new_x,
-                y + item.h + 3 * self.sp,
+                y + item.h + self.sp_y,
                 processed_items)
             self.place_line_item(
-                [x + (0.75 if new_x != x else 0.5) * item.w, y + item.h],
-                [self.items[new_item[0]].x() + (0.25 if new_x != x else 0.51) * item.w, self.items[new_item[0]].y()],
+                [x + 0.5 * item.w, y + item.h],
+                [self.items[new_item[0]].x() + 0.5 * item.w, self.items[new_item[0]].y()],
                 True
             )
         if tree_item[3] not in processed_items and tree_item[3] != 0:
@@ -133,11 +165,11 @@ class ItemsTreeListItem(ListItem):
             self.place_tree_item(
                 new_item,
                 x - item.w - self.sp,
-                y + item.h + 3 * self.sp,
+                y + item.h + self.sp_y,
                 processed_items)
             self.place_line_item(
-                [x + 0.25 * item.w, y + item.h],
-                [self.items[new_item[0]].x() + 0.75 * item.w, self.items[new_item[0]].y()],
+                [x + 0.5 * item.w, y + item.h],
+                [self.items[new_item[0]].x() + 0.5 * item.w, self.items[new_item[0]].y()],
                 False
             )
 
@@ -179,50 +211,6 @@ class ItemsTreeListItem(ListItem):
         max_item = max(self.items, key=lambda i: i.y())
         max_y = max_item.y() + max_item.h
         self.h = max_y - min_y + y + 2 * self.sp
-
-    def get_tree_width_height(self):
-        subtrees_count = 1
-        processed_items = []
-        next_items = [self.tree_data[0][1]]
-        item_width = self.items[0].w
-        total_width = item_width
-        item_height = self.items[0].h
-        total_height = item_height
-
-        while len(processed_items) != len(self.tree_data):
-            has_failure = list(filter(lambda x:
-                                      x[3] != 0 and
-                           x[3] != x[1] and
-                           x[3] not in processed_items and
-                x[1] in next_items, self.tree_data))
-            has_success = list(filter(lambda x:
-                                      x[2] != 0 and
-                           x[2] != x[1] and
-                           x[2] not in processed_items and
-                x[1] in next_items, self.tree_data))
-
-            rospy.logdebug("SUCCESS")
-            rospy.logdebug(has_success)
-            rospy.logdebug("FAILURE")
-            rospy.logdebug(has_failure)
-
-            if len(has_success) > 0:
-                total_height += item_height
-            if len(has_failure) > 0:
-                total_width += subtrees_count * (1.5 * item_width) + self.sp
-                subtrees_count *= 2
-            processed_items.extend(next_items)
-            del next_items[:]
-            next_items.extend(map(lambda x: x[2], has_success))
-            next_items.extend(map(lambda x: x[3], has_failure))
-
-            rospy.logdebug("NEXT ITEMS")
-            rospy.logdebug(next_items)
-
-            if len(next_items) == 0 and len(processed_items) != len(self.tree_data):
-                break
-
-        return total_width, total_height
 
     def paint(self, painter, option, widget):
 

@@ -22,11 +22,16 @@ class ButtonItem(Item):
             background_color=QtCore.Qt.green,
             width=None,
             push_button=False,
-            image_path=None):
+            image_path=None,
+            movable=False,
+            mouse_release_cb=None,
+            mouse_move_cb=None):
 
         self.background_color = background_color
         self.scale = scale
         self.clicked = clicked
+        self.mouse_release_cb = mouse_release_cb
+        self.mouse_move_cb = mouse_move_cb
         self.push_button = push_button
         self.pressed = False
         self.id = id
@@ -37,6 +42,8 @@ class ButtonItem(Item):
         self.h = 0
 
         super(ButtonItem, self).__init__(scene, x, y, parent=parent)
+
+        self.sp = self.m2pix(0.005)
         self.setCacheMode(QtGui.QGraphicsItem.ItemCoordinateCache)
         self.setZValue(100)
 
@@ -48,6 +55,7 @@ class ButtonItem(Item):
             self.set_image(image_path)
 
         self.setFlag(QtGui.QGraphicsItem.ItemIsSelectable, True)
+        self.setFlag(QtGui.QGraphicsItem.ItemIsMovable, movable)
 
     def set_image(self, image_path):
 
@@ -108,6 +116,22 @@ class ButtonItem(Item):
         if width is not None:
             self.set_width(width)
         self.update()
+
+    def mouseReleaseEvent(self, event):
+
+        if self.mouse_release_cb is not None:
+            self.mouse_release_cb(self, self.pos())
+
+    def mouseMoveEvent(self, event):
+
+        QtGui.QGraphicsItem.mouseMoveEvent(self, event)
+        self.setX(0)
+        if self.pos().y() < 0:
+            self.setY(0)
+        elif self.pos().y() > self.parentItem().pos().y() + self.parentItem().h - 3 * self.h:
+            self.setY(self.parentItem().pos().y() + self.parentItem().h - 3 * self.h)
+        if self.mouse_move_cb is not None:
+            self.mouse_move_cb(self, self.pos())
 
     def paint(self, painter, option, widget):
 

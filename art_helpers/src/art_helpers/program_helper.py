@@ -117,14 +117,14 @@ class ProgramHelper(object):
                 if vv["on_success"] != 0 and vv["on_success"] not in cache[k]["items"]:
 
                     rospy.logdebug(cache[k]["items"])
-                    rospy.logerr("Block id: " + str(k) + ", item id: " +
-                                 str(kk) + " has invalid on_success: " + str(vv["on_success"]))
+                    rospy.logerr("Block id: " + str(k) + ", item id: "
+                                 + str(kk) + " has invalid on_success: " + str(vv["on_success"]))
                     return False
 
                 if vv["on_failure"] != 0 and vv["on_failure"] not in cache[k]["items"]:
 
-                    rospy.logerr("Block id: " + str(k) + ", item id: " + str(kk) +
-                                 " has invalid on_failure: " + str(vv["on_failure"]))
+                    rospy.logerr("Block id: " + str(k) + ", item id: " + str(kk)
+                                 + " has invalid on_failure: " + str(vv["on_failure"]))
                     return False
 
                 item = prog.blocks[v["idx"]].items[vv["idx"]]
@@ -134,8 +134,8 @@ class ProgramHelper(object):
 
                     if ref not in cache[k]["items"]:
 
-                        rospy.logerr("Block id: " + str(k) + ", item id: " + str(kk) +
-                                     " has invalid ref_id: " + str(ref))
+                        rospy.logerr("Block id: " + str(k) + ", item id: " + str(kk)
+                                     + " has invalid ref_id: " + str(ref))
                         return False
 
                 # at least one 'object' mandatory for following types
@@ -179,8 +179,8 @@ class ProgramHelper(object):
 
                         if ref_msg.type not in self.ih.properties.pick:
 
-                            rospy.logerr("Block id: " + str(k) + ", item id: " + str(kk) +
-                                         " has ref_id which is not PICK_*!")
+                            rospy.logerr("Block id: " + str(k) + ", item id: " + str(kk)
+                                         + " has ref_id which is not PICK_*!")
                             return False
 
                 # TODO refactor into separate method
@@ -651,8 +651,8 @@ class ProgramHelper(object):
         item_msg.on_success = on_success
 
         # if place_set ref to the nearest pick
-        if item_msg.type in self.ih.properties.place or \
-                item_msg.type in self.ih.properties.ref_to_pick:
+        if item_type in self.ih.properties.place or \
+                item_type in self.ih.properties.ref_to_pick:
 
             i = previous_item_idx
             while i > -1 and items[i].type not in self.ih.properties.pick:
@@ -675,6 +675,9 @@ class ProgramHelper(object):
 
         if previous_item_idx > -1:
             items[previous_item_idx].on_success = item_msg.id
+
+        rospy.logdebug("NEEEEEW ITEEEEEEEEEEEEEM")
+        rospy.logdebug(item_msg)
 
         items.insert(
             previous_item_idx + 1,
@@ -745,19 +748,19 @@ class ProgramHelper(object):
         if object_type is None:
 
             # return ["PlaceToPose"]
-            return list(set(["PlaceToPose"])
-                        & set(self.get_allowed_new_items(block_id, previous_item_id)))
+            return list(set(["PlaceToPose"]) &
+                        set(self.get_allowed_new_items(block_id, previous_item_id)))
 
         if object_type.container:
 
             # return ["PlaceToContainer"]
-            return list(set(["PlaceToContainer"])
-                        & set(self.get_allowed_new_items(block_id, previous_item_id)))
+            return list(set(["PlaceToContainer"]) &
+                        set(self.get_allowed_new_items(block_id, previous_item_id)))
 
         return list(filter(lambda x:
-                           x in self.ih.properties.using_object
-                           and x not in self.ih.properties.place
-                           and x in allowed_items, instructions))
+                           x in self.ih.properties.using_object and
+                           x not in self.ih.properties.place and
+                           x in allowed_items, instructions))
 
     def get_allowed_new_items(self, block_id, previous_item_id=None):
 
@@ -790,6 +793,11 @@ class ProgramHelper(object):
                 instructions.remove(t)
 
         return instructions
+
+    def move_block_item_to_idx(self, previous_idx, block_id, item_id=None):
+        block_idx = self._cache[block_id]["idx"]
+        item_idx = None if item_id is None else \
+            self._cache[block_id]["items"][item_id]["idx"]
 
     def move_block_item_down(self, block_id, item_id=None):
         block_idx = self._cache[block_id]["idx"]

@@ -3,6 +3,7 @@
 from art_projected_gui.gui import UICore
 from PyQt4 import QtCore
 import rospy
+import math
 from art_msgs.msg import InstancesArray, InterfaceState, LearningRequestAction,\
     LearningRequestGoal, HololensState, KeyValue
 from art_projected_gui.items import ObjectItem, ButtonItem, PoseStampedCursorItem, LabelItem,\
@@ -1462,6 +1463,7 @@ class UICoreRos(UICore):
                     + self.current_object.sceneBoundingRect().height()
                     / 2
                     + self.current_object.m2pix(0.01)))
+            self.select_instruction.setRotation(self.current_object.get_rotation())
 
             return True
 

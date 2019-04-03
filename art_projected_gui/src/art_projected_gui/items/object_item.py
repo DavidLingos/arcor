@@ -110,6 +110,39 @@ class ObjectItem(Item):
 
         return c_idx
 
+    def get_rotation(self):
+
+        ax = self.get_yaw_axis()
+
+        if ax == ObjectItem.Z:
+
+            self.lx = self.m2pix(self.inflate + self.object_type.bbox.dimensions[0])
+            self.ly = self.m2pix(self.inflate + self.object_type.bbox.dimensions[1])
+
+            sres = conversions.qv_mult(self.quaternion, (1, 0, 0))
+            angle = math.atan2(sres[1], sres[0])
+
+            self.on_table = self.position[2] < self.object_type.bbox.dimensions[2] + 0.05
+
+        elif ax in [ObjectItem.X, ObjectItem.Y]:
+
+            res = conversions.qv_mult(self.quaternion, (0, 0, 1))
+
+            self.lx = self.m2pix(self.inflate + self.object_type.bbox.dimensions[2])
+
+            # TODO use correct dimension (x/y) - now let's assume that x and y dimensions are same
+            self.ly = self.m2pix(self.inflate + self.object_type.bbox.dimensions[1])
+
+            angle = math.atan2(res[1], res[0])
+
+            self.on_table = self.position[2] < self.object_type.bbox.dimensions[0] + 0.05
+
+        else:
+
+            return 0
+
+        return angle / (math.pi * 2) * 360
+
     def set_orientation(self, q):
 
         self.quaternion = q
