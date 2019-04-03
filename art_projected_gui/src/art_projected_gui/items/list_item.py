@@ -14,7 +14,10 @@ icons_path = rospack.get_path('art_projected_gui') + '/icons/'
 
 class ListItem(Item):
 
-    def __init__(self, scene, x, y, w, data, item_selected_cb=None, item_moved_cb=None, parent=None):
+    def __init__(self, scene, x, y, w, data,
+                 item_selected_cb=None, item_moved_cb=None,
+                 parent=None, movable_items=False,
+                 item_mouse_release_cb=None, item_mouse_move_cb=None):
 
         self.w = 100
         self.h = 100
@@ -37,7 +40,11 @@ class ListItem(Item):
         for d in data:
 
             self.items.append(ButtonItem(self.scene(), 0, 0,
-                                         d, self, self.item_clicked_cb, width=w, push_button=True))
+                                         d, self, self.item_clicked_cb,
+                                         movable=movable_items,
+                                         mouse_release_cb=item_mouse_release_cb,
+                                         mouse_move_cb=item_mouse_move_cb,
+                                         width=w, push_button=True))
 
         # TODO down_btn is not properly aligned
         self.up_btn = ButtonItem(self.scene(), 0, 0, "", self, self.up_btn_cb, width=w / 2 - 0.005 / 2,
@@ -83,7 +90,19 @@ class ListItem(Item):
 
         return self.middle_item_idx
 
-    def set_current_idx(self, idx, select=False):
+    def set_current_idx(self, idx, select=False, moving_item=None):
+
+        if idx >= len(self.items):
+            idx = len(self.items) - 1
+
+        if idx < 0:
+            idx = 0
+
+        moving_item_idx = -1
+
+        if moving_item is not None:
+
+            moving_item_idx = self.items.index(moving_item)
 
         if select:
 
@@ -93,7 +112,8 @@ class ListItem(Item):
 
         for it in self.items:
 
-            it.setVisible(False)
+            if it != moving_item:
+                it.setVisible(False)
 
             if select:
                 it.set_pressed(False)
@@ -102,10 +122,12 @@ class ListItem(Item):
 
         if self.middle_item_idx != -1:
 
-            # selected item is always vertically centered
-            self.items[self.middle_item_idx].setPos(
-                0, (self.h - self.items[self.middle_item_idx].boundingRect().height()) / 2)
-            self.items[self.middle_item_idx].setVisible(True)
+            if self.middle_item_idx != moving_item_idx:
+
+                # selected item is always vertically centered
+                self.items[self.middle_item_idx].setPos(
+                    0, (self.h - self.items[self.middle_item_idx].boundingRect().height()) / 2)
+                self.items[self.middle_item_idx].setVisible(True)
 
             if select:
                 self.items[self.selected_item_idx].set_pressed(True)
@@ -122,8 +144,9 @@ class ListItem(Item):
                 if y < 0:
                     break
 
-                self.items[idx].setPos(0, y)
-                self.items[idx].setVisible(True)
+                if idx != moving_item_idx:
+                    self.items[idx].setPos(0, y)
+                    self.items[idx].setVisible(True)
                 displayed.append(idx)
                 vspace += self.sp + h
                 displayed.append(idx)
@@ -138,8 +161,9 @@ class ListItem(Item):
                 if y + h > self.down_btn.y():
                     break
 
-                self.items[idx].setPos(0, y)
-                self.items[idx].setVisible(True)
+                if idx != moving_item_idx:
+                    self.items[idx].setPos(0, y)
+                    self.items[idx].setVisible(True)
                 vspace += self.sp + h
                 displayed.append(idx)
 
@@ -160,7 +184,7 @@ class ListItem(Item):
             self.set_current_idx(self.middle_item_idx - 1)
 
         if self.item_moved_cb is not None:
-            self.item_moved_cb()
+            self.item_moved_cb(up=True)
 
     def down_btn_cb(self, btn):
 

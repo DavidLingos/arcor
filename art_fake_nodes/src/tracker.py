@@ -38,7 +38,7 @@ class FakeObjectTracker:
         obj.pose.position.x = 0.3
         obj.pose.position.y = 0.3
         obj.pose.position.z = 0
-        obj.pose.orientation.x = 0
+        obj.pose.orientation.x = 0.75
         obj.pose.orientation.y = 0
         obj.pose.orientation.z = 0
         obj.pose.orientation.w = 1

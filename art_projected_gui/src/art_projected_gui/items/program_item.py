@@ -541,7 +541,7 @@ class ProgramItem(Item):
             self.items_map_rev[item_id] = i
 
         self.items_list = ItemsTreeListItem(self.scene(
-        ), 0, 0, 0.2 - 2 * 0.005, idata, tree_data,
+        ), 0, 0, 0.2 - 2 * 0.005, idata, tree_data, self.ph,
             visualization_finished_cb=self.item_tree_visualization_finished,
             item_selected_cb=self.item_selected_cb,
             item_moved_cb=self.block_item_moved_cb, parent=self)
@@ -835,7 +835,7 @@ class ProgramItem(Item):
         if self.item_switched_cb is not None:
             self.item_switched_cb(*self.cid)
 
-    def block_item_moved_cb(self, up=True):
+    def block_item_moved_cb(self, pos=None, up=True):
 
         if self.blocks_list.selected_item_idx is None or \
                 (self.items_list is not None and
@@ -939,9 +939,10 @@ class ProgramItem(Item):
 
         if self.item_on_failure_clicked:
             of = self.ph.get_id_on_failure(*self.cid)
-            self.set_active(*of)
-            if self.item_switched_cb is not None:
-                self.item_switched_cb(*of)
+            if of.block_id != 0:
+                self.set_active(*of)
+                if self.item_switched_cb is not None:
+                    self.item_switched_cb(*of)
 
         self.item_on_failure_clicked = not self.item_on_failure_clicked
         self.item_on_failure_btn.set_pressed(self.item_on_failure_clicked)
