@@ -1476,8 +1476,11 @@ class UICoreRos(UICore):
         rospy.logdebug("attempt to select object id: " + id)
         obj = self.get_object(id)
 
-        self.current_instruction.object_selected(obj, selected, msg)
+        if self.current_instruction is not None:
 
-        self.state_manager.update_program_item(self.ph.get_program_id(
-        ), self.program_vis.block_id, self.program_vis.get_current_item())
+            self.current_instruction.object_selected(obj, selected, msg)
+
+            self.state_manager.update_program_item(self.ph.get_program_id(
+            ), self.program_vis.block_id, self.program_vis.get_current_item())
+
         return True

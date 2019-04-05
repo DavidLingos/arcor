@@ -92,28 +92,14 @@ class ListItem(Item):
 
     def set_current_idx(self, idx, select=False, moving_item=None):
 
-        if idx >= len(self.items):
-            idx = len(self.items) - 1
-
-        if idx < 0:
-            idx = 0
-
-        moving_item_idx = -1
-
-        if moving_item is not None:
-
-            moving_item_idx = self.items.index(moving_item)
-
         if select:
-
             self.selected_item_idx = idx
 
         self.middle_item_idx = max(idx, min(1, len(self.items) - 1))
 
         for it in self.items:
 
-            if it != moving_item:
-                it.setVisible(False)
+            it.setVisible(False)
 
             if select:
                 it.set_pressed(False)
@@ -122,12 +108,10 @@ class ListItem(Item):
 
         if self.middle_item_idx != -1:
 
-            if self.middle_item_idx != moving_item_idx:
-
-                # selected item is always vertically centered
-                self.items[self.middle_item_idx].setPos(
-                    0, (self.h - self.items[self.middle_item_idx].boundingRect().height()) / 2)
-                self.items[self.middle_item_idx].setVisible(True)
+            # selected item is always vertically centered
+            self.items[self.middle_item_idx].setPos(
+                0, (self.h - self.items[self.middle_item_idx].boundingRect().height()) / 2)
+            self.items[self.middle_item_idx].setVisible(True)
 
             if select:
                 self.items[self.selected_item_idx].set_pressed(True)
@@ -144,9 +128,8 @@ class ListItem(Item):
                 if y < 0:
                     break
 
-                if idx != moving_item_idx:
-                    self.items[idx].setPos(0, y)
-                    self.items[idx].setVisible(True)
+                self.items[idx].setPos(0, y)
+                self.items[idx].setVisible(True)
                 displayed.append(idx)
                 vspace += self.sp + h
                 displayed.append(idx)
@@ -161,9 +144,8 @@ class ListItem(Item):
                 if y + h > self.down_btn.y():
                     break
 
-                if idx != moving_item_idx:
-                    self.items[idx].setPos(0, y)
-                    self.items[idx].setVisible(True)
+                self.items[idx].setPos(0, y)
+                self.items[idx].setVisible(True)
                 vspace += self.sp + h
                 displayed.append(idx)
 
