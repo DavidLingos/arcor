@@ -676,9 +676,6 @@ class ProgramHelper(object):
         if previous_item_idx > -1:
             items[previous_item_idx].on_success = item_msg.id
 
-        rospy.logdebug("NEEEEEW ITEEEEEEEEEEEEEM")
-        rospy.logdebug(item_msg)
-
         items.insert(
             previous_item_idx + 1,
             item_msg
@@ -776,7 +773,7 @@ class ProgramHelper(object):
             if previous_item_id is None:
                 previous_item_id = len(self._prog.blocks[block_idx].items)
 
-            block_id, previous_item_idx = self._get_item_on(block_id, previous_item_id, "idx")
+            previous_item_idx = self._cache[block_id]["items"][previous_item_id]["idx"]
 
             for i in range(previous_item_idx, -1, -1):
 
