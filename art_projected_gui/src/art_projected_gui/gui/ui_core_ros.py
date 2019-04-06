@@ -897,6 +897,10 @@ class UICoreRos(UICore):
         else:
 
             if item_id is None:
+
+                if self.select_instruction is not None:
+                    self.hide_instruction_list()
+
                 self.notif(
                     translate("UICoreRos",
                               "Select instruction or return to blocks."))
