@@ -982,6 +982,7 @@ class ProgramItem(Item):
         group_visible(self.item_btns, False)
         self.title.setVisible(False)
         self.items_list.show_items_tree()
+        self.update()
         return
 
     def item_tree_visualization_finished(self):

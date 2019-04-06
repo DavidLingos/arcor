@@ -25,6 +25,7 @@ class TouchTablePlugin(GuiPlugin):
 
         self.touch_table = TouchTableItem(
             self.ui.scene,
+            self.ui,
             '/art/interface/touchtable/touch',
             [],
             show_touch_points=False)  # TODO get it from some param

@@ -21,12 +21,13 @@ def logdebug(msg):
 
 class TouchPointItem(Item):
 
-    def __init__(self, scene, x, y, parent, show=False):
+    def __init__(self, scene, x, y, parent, ui, show=False):
 
         self.pointed_item = None
         self.offset = (0, 0)
         self.last_update = rospy.Time.now()
         self.show = show
+        self.ui = ui
 
         super(TouchPointItem, self).__init__(scene, x, y, parent)
 
@@ -44,6 +45,10 @@ class TouchPointItem(Item):
             self.pointed_item.set_hover(False, self)
             self.pointed_item.cursor_release()
             self.pointed_item = None
+
+        else:
+
+            self.ui.cursor_click(self.get_pos())
 
     def set_poss(self, x, y):
 
@@ -146,10 +151,11 @@ class TouchTableItemHelper(QtCore.QObject):
 class TouchTableItem(Item):
 
     # TODO display corners of touchable area
-    def __init__(self, scene, topic, items_to_disable_on_touch=[], world_frame="marker", show_touch_points=False):
+    def __init__(self, scene, ui, topic, items_to_disable_on_touch=[], world_frame="marker", show_touch_points=False):
 
         super(TouchTableItem, self).__init__(scene, 0.0, 0.0)
         self.touch_points = {}
+        self.ui = ui
 
         self.show_touch_points = show_touch_points
         self.items_to_disable_on_touch = items_to_disable_on_touch
@@ -208,7 +214,7 @@ class TouchTableItem(Item):
             # TODO check frame_id
             logdebug("new touch point, id: " + str(msg.id))
             self.touch_points[msg.id] = TouchPointItem(
-                self.scene(), msg.point.point.x, msg.point.point.y, self, show=self.show_touch_points)
+                self.scene(), msg.point.point.x, msg.point.point.y, self, self.ui, show=self.show_touch_points)
 
         else:
 

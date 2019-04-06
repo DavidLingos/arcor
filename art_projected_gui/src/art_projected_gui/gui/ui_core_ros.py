@@ -1229,6 +1229,10 @@ class UICoreRos(UICore):
 
             self.hide_instruction_list()
 
+        else:
+
+            self.active_item_switched(self.program_vis.block_id, self.program_vis.item_id)
+
     def learning_request_done_cb(self, status, result):
 
         self.emit(QtCore.SIGNAL('learning_request_done_evt'), status, result)
@@ -1415,29 +1419,16 @@ class UICoreRos(UICore):
         self.state_manager.update_program_item(self.ph.get_program_id(
         ), self.program_vis.block_id, self.program_vis.get_current_item())
 
-    def cursor_click(self, evt):
+    def cursor_click(self, pos):
 
-        item = self.view.itemAt(evt.x(), evt.y())
+        self.current_object = self.view
 
-        if item is None:
-
-            self.current_object = self.view
-
-            if self.program_vis is None or self.program_vis.items_list is None:
-                rospy.logdebug("not in edit mode")
-
-            else:
-                self.show_instructions_list(
-                    float(evt.x()) / self.view.width(),
-                    float(self.view.height() - evt.y()) / (self.view.height() * 2),
-                    obj=self.current_object)
-                self.clicked_pos = [
-                    float(evt.x()) / self.view.width(),
-                    float(self.view.height() - evt.y()) / self.view.height()]
+        if self.program_vis is None or self.program_vis.items_list is None:
+            rospy.logdebug("not in edit mode")
 
         else:
-
-            item.cursor_click()
+            self.show_instructions_list(pos[0], pos[1], obj=self.current_object)
+            self.clicked_pos = pos
 
     def object_selected(self, id, selected):
 
