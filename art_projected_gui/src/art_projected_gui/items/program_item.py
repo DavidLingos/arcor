@@ -978,10 +978,10 @@ class ProgramItem(Item):
 
     def item_tree_btn_cb(self, btn):
 
-        self.show_background = False
         group_visible(self.item_btns, False)
         self.title.setVisible(False)
         self.items_list.show_items_tree()
+        self.show_background = False
         self.update()
         return
 

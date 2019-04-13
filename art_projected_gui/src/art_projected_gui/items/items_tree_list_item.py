@@ -206,6 +206,11 @@ class ItemsTreeListItem(ListItem):
                 self.items[i].setPos(self.items[i].x() + abs(min_x), self.items[i].y())
             for i in range(0, len(self.lines)):
                 self.lines[i].setPos(self.lines[i].x() + abs(min_x), self.lines[i].y())
+        else:
+            for i in range(0, len(self.items)):
+                self.items[i].setPos(self.items[i].x() + self.sp, self.items[i].y())
+            for i in range(0, len(self.lines)):
+                self.lines[i].setPos(self.lines[i].x() + self.sp, self.lines[i].y())
         self.w = max_x - min_x + 2 * self.sp
         min_y = min(self.items, key=lambda i: i.y()).y()
         max_item = max(self.items, key=lambda i: i.y())
