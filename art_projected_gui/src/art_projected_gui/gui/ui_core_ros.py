@@ -86,10 +86,9 @@ class UICoreRos(UICore):
         self.program_widget_pos = array_from_param("program_widget_pos", float, 2, [0.2, self.height - 0.2])
         self.program_build_widget_pos = array_from_param("program_build_widget_pos", float, 2, [0.2, self.height - 0.2])
         self.last_edited_prog_id = None
-        self.learning_service_started = False
+        self.clear_after_learning_started = False
         self.current_object = None
         self.select_instruction = None
-        self.learn_instruction = False
         self.clicked_pos = [0, 0]
         self.new_item_id = None
 
@@ -784,19 +783,12 @@ class UICoreRos(UICore):
                 # there may be unsaved changes - let's use ProgramItem from brain
                 self.ph.set_item_msg(state.block_id, state.program_current_item)
 
-            if not self.ph.is_empty():
-                self.learning_service_started = True
+            if self.clear_after_learning_started:
 
-            # if self.program_vis is not None:
-            #     rospy.logdebug(self.program_vis)
-            #     self.program_vis.setVisible(True)
-            #     return
+                self.ph.delete_item(1, 1)
+                self.clear_after_learning_started = False
 
             self.show_program_vis()
-
-            if self.learn_instruction:
-                self.program_vis.edit_request = True
-                self.learning_request_cb(LearningRequestGoal.GET_READY)
 
         if state.block_id == 0 or state.program_current_item.id == 0:
             rospy.logerr("Invalid state!")
@@ -986,11 +978,11 @@ class UICoreRos(UICore):
 
     def item_added_cb(self):
 
-        if not self.learning_service_started:
+        # if not self.learning_service_started:
+        #
+        #     self.try_start_learning_service()
 
-            self.try_start_learning_service()
-
-            return
+        return
 
     def learning_done_cb(self):
 
@@ -1160,18 +1152,16 @@ class UICoreRos(UICore):
 
                 rospy.loginfo("Program ID=" + str(prog_id) + " templated as ID=" + str(prog.header.id))
 
-            if not self.ph.is_empty():
-
-                self.try_start_learning_service()
-
             else:
-
-                self.program_list.set_enabled(False, True)
+                self.clear_all()
                 self.show_program_vis()
 
-            # else:
-                # self.clear_all()
-                # self.show_program_vis()
+            if self.ph.is_empty():
+
+                self.ph.add_item(1, "GetReady")
+                self.clear_after_learning_started = True
+
+            self.try_start_learning_service()
 
     def learning_request_cb(self, req):
 
@@ -1299,14 +1289,10 @@ class UICoreRos(UICore):
 
     def instruction_selected_cb(self):
 
-        self.learn_instruction = not self.learning_service_started
-
         instruction_id = self.select_instruction.selected_instruction_id
         self.new_item_id = self.program_vis.handle_new_instruction(instruction_id)
 
-        if self.select_instruction is not None and not self.learn_instruction:
-
-            # # what has to be done after instruction is selected in object menu
+        if self.select_instruction is not None:
 
             self.program_vis.edit_request = True
             self.learning_request_cb(LearningRequestGoal.GET_READY)
