@@ -646,7 +646,8 @@ class ProgramHelper(object):
         item_msg = self.ih.get_instruction_msgs(
             item_type,
             len(items) + 1,
-            name=item_type + str(len(items) + 1)
+            name=item_type + str(len(items) + 1),
+            ref_id=[]
         )
         item_msg.on_success = on_success
 

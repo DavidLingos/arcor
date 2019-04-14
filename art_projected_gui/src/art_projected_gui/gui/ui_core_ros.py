@@ -86,12 +86,12 @@ class UICoreRos(UICore):
         self.program_widget_pos = array_from_param("program_widget_pos", float, 2, [0.2, self.height - 0.2])
         self.program_build_widget_pos = array_from_param("program_build_widget_pos", float, 2, [0.2, self.height - 0.2])
         self.last_edited_prog_id = None
-        self.learning_service_started = False
+        self.clear_after_learning_start = True
         self.current_object = None
         self.select_instruction = None
-        self.learn_instruction = False
         self.clicked_pos = [0, 0]
         self.new_item_id = None
+        self.new_instruction_id = None
 
         self.ph = ProgramHelper()
 
@@ -784,19 +784,12 @@ class UICoreRos(UICore):
                 # there may be unsaved changes - let's use ProgramItem from brain
                 self.ph.set_item_msg(state.block_id, state.program_current_item)
 
-            if not self.ph.is_empty():
-                self.learning_service_started = True
-
             # if self.program_vis is not None:
             #     rospy.logdebug(self.program_vis)
             #     self.program_vis.setVisible(True)
             #     return
 
             self.show_program_vis()
-
-            if self.learn_instruction:
-                self.program_vis.edit_request = True
-                self.learning_request_cb(LearningRequestGoal.GET_READY)
 
         if state.block_id == 0 or state.program_current_item.id == 0:
             rospy.logerr("Invalid state!")
@@ -899,7 +892,8 @@ class UICoreRos(UICore):
             if item_id is None:
 
                 if self.select_instruction is not None:
-                    self.hide_instruction_list()
+                    rospy.logerr("HIDING HERE 1")
+                    self.hide_instruction_list(False)
 
                 self.notif(
                     translate("UICoreRos",
@@ -982,37 +976,18 @@ class UICoreRos(UICore):
             self.notif(
                 translate("UICoreRos", "Failed to start edit mode."), message_type=NotifyUserRequest.ERROR)
 
-            self.hide_instruction_list()
+            rospy.logerr("HIDING HERE 2")
+            self.hide_instruction_list(False)
 
-        else:
-
-            self.learning_service_started = True
+        if self.clear_after_learning_start:
+            self.ph.delete_item(1, 1)
+            self.clear_after_learning_start = False
 
     def item_added_cb(self):
 
-        if not self.learning_service_started:
-
-            self.try_start_learning_service()
-
-            return
+        return
 
     def learning_done_cb(self):
-
-        rospy.logdebug(self.learning_service_started)
-
-        if not self.learning_service_started:
-
-            if self.program_list is not None:
-                self.program_list.set_enabled(True, True)
-
-            if self.program_vis is not None:
-                self.program_vis.set_enabled(False, True)
-
-            if None in (self.program_vis, self.program_list):
-
-                self.show_program_list()
-
-            return
 
         prog = self.ph.get_program()
 
@@ -1037,10 +1012,6 @@ class UICoreRos(UICore):
 
             rospy.logwarn("Failed to stop learning mode.")
             return
-
-        else:
-
-            self.learning_service_started = False
 
     def hololens_active_cb(self, msg):
         # temporarily set by default to true to avoid rosbridge crashing
@@ -1164,18 +1135,18 @@ class UICoreRos(UICore):
 
                 rospy.loginfo("Program ID=" + str(prog_id) + " templated as ID=" + str(prog.header.id))
 
-            if not self.ph.is_empty():
+            if self.ph.is_empty():
+                self.ph.add_item(1, "GetReady")
+                self.clear_after_learning_start = True
 
-                self.try_start_learning_service()
+            self.try_start_learning_service()
 
-            else:
-
-                self.program_list.set_enabled(False, True)
-                self.show_program_vis()
+            self.program_list.set_enabled(False, True)
+            self.show_program_vis()
 
             # else:
-                # self.clear_all()
-                # self.show_program_vis()
+            # self.clear_all()
+            # self.show_program_vis()
 
     def learning_request_cb(self, req):
 
@@ -1208,10 +1179,10 @@ class UICoreRos(UICore):
 
         self.program_vis.learning_request_result(result.success)
 
-        instruction = self.select_instruction.selected_instruction_id if \
-            self.select_instruction is not None else None
+        rospy.logerr(self.new_instruction_id)
 
-        if instruction == "PlaceToPose":
+        if self.new_instruction_id == "PlaceToPose":
+
             place = self.get_place(self.ph.get_name(
                 self.program_vis.block_id,
                 self.program_vis.item_id
@@ -1223,15 +1194,14 @@ class UICoreRos(UICore):
                 place.item_moved()
                 self.place_pose_changed(place=place)
 
-        elif self.current_object is not None:
+        elif self.current_object is not None and isinstance(self.current_object, Item):
 
             self.current_object.cursor_click()
 
         if self.current_object is not None:
+            self.hide_instruction_list()
             self.program_vis.edit_request = True
             self.learning_request_cb(LearningRequestGoal.DONE)
-
-            self.hide_instruction_list()
 
         else:
 
@@ -1285,12 +1255,13 @@ class UICoreRos(UICore):
 
         if remove_current_object:
             self.current_object = None
+            self.new_instruction_id = None
 
     def show_instructions_list(self, x, y, obj=None):
 
         # init instruction selection
-
         self.hide_instruction_list(False)
+        self.program_vis.deselect_item()
 
         self.select_instruction = SelectInstructionItem(
             self.scene,
@@ -1307,17 +1278,11 @@ class UICoreRos(UICore):
 
     def instruction_selected_cb(self):
 
-        self.learn_instruction = not self.learning_service_started
+        self.new_instruction_id = self.select_instruction.selected_instruction_id
+        self.new_item_id = self.program_vis.handle_new_instruction(self.new_instruction_id)
 
-        instruction_id = self.select_instruction.selected_instruction_id
-        self.new_item_id = self.program_vis.handle_new_instruction(instruction_id)
-
-        if self.select_instruction is not None and not self.learn_instruction:
-
-            # # what has to be done after instruction is selected in object menu
-
-            self.program_vis.edit_request = True
-            self.learning_request_cb(LearningRequestGoal.GET_READY)
+        self.program_vis.edit_request = True
+        self.learning_request_cb(LearningRequestGoal.GET_READY)
 
     def program_selection_changed_cb(self, program_id, ro=False, learned=False, empty=False):
 
@@ -1459,7 +1424,6 @@ class UICoreRos(UICore):
                     / 2
                     + self.current_object.m2pix(0.01)))
             self.select_instruction.setRotation(self.current_object.get_rotation())
-
             return True
 
         msg = self.program_vis.get_current_item()

@@ -796,6 +796,19 @@ class ProgramItem(Item):
 
         return True
 
+    def deselect_item(self):
+
+        self.item_id = None
+        group_enable(
+            (self.item_run_btn,
+             self.item_on_success_btn,
+             self.item_on_failure_btn,
+             self.item_edit_btn,
+             self.item_delete_btn), False)
+
+        if self.item_switched_cb is not None:
+            self.item_switched_cb(*self.cid)
+
     def item_selected_cb(self, visualize=False):
 
         if self.items_list.selected_item_idx is not None:
