@@ -190,11 +190,11 @@ class InstructionsHelper(object):
 
     @staticmethod
     def get_instruction_msgs(item_type, it_id,
-                             on_success=0, on_failure=0, obj_type="", ref_id=[],
+                             on_success=None, on_failure=0, obj_type="", ref_id=[],
                              name="", objects=2, holes=2, drill_obj_type=[""]):
 
         if item_type == "PickFromPolygon":
-            return polygon_item(it_id, on_success, on_failure, obj_type, ref_id)
+            return polygon_item(it_id, on_success=on_success, on_failure=on_failure, obj_type=obj_type, ref_id=ref_id)
         elif item_type == "PickFromFeeder":
             return feeder_item(it_id, on_success, on_failure, obj_type, ref_id)
         elif item_type == "VisualInspection":
