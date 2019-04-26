@@ -156,7 +156,7 @@ def main(args):
     # -------------------------------------------------------------------------------------------
 
     art.store_object_type(obj_type("Spojka", 0.046, 0.046, 0.154))
-    art.store_object_type(obj_type("Kratka_noha", 0.046, 0.046, 0.298, container=True))
+    art.store_object_type(obj_type("Kratka_noha", 0.046, 0.046, 0.298))
     art.store_object_type(obj_type("Dlouha_noha", 0.046, 0.046, 0.398))
     art.store_object_type(obj_type("Modry_kontejner", 0.1, 0.14, 0.08, container=True))
 

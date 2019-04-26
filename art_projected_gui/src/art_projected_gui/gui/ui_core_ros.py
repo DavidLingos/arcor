@@ -1344,6 +1344,7 @@ class UICoreRos(UICore):
                             + obj.sceneBoundingRect().height()
                             / 2
                             + obj.m2pix(0.01)))
+                    self.select_instruction.setRotation(self.current_object.get_rotation())
 
             else:
 
