@@ -1342,13 +1342,14 @@ class UICoreRos(UICore):
 
                     self.select_instruction.setPos(
                         obj.mapFromScene(
-                            obj.x() -
-                            obj.sceneBoundingRect().width() /
-                            2,
-                            obj.y() +
-                            obj.sceneBoundingRect().height() /
-                            2 +
-                            obj.m2pix(0.01)))
+                            obj.x()
+                            - obj.sceneBoundingRect().width()
+                            / 2,
+                            obj.y()
+                            + obj.sceneBoundingRect().height()
+                            / 2
+                            + obj.m2pix(0.01)))
+                    self.select_instruction.setRotation(self.current_object.get_rotation())
 
             else:
 
