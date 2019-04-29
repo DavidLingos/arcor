@@ -743,8 +743,6 @@ class ProgramHelper(object):
 
         allowed_items = self.get_allowed_new_items(block_id, previous_item_id)
 
-        rospy.logerr(object_type)
-
         if object_type is None:
 
             # return ["PlaceToPose"]

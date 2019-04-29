@@ -196,8 +196,6 @@ class UICoreRos(UICore):
         for plugin in self.plugins:
             plugin.init()
 
-        self.view.mouseDoubleClickEvent = self.cursor_click
-
         rospy.loginfo("Projected GUI ready!")
 
     def notify_info(self):
@@ -892,7 +890,6 @@ class UICoreRos(UICore):
             if item_id is None:
 
                 if self.select_instruction is not None:
-                    rospy.logerr("HIDING HERE 1")
                     self.hide_instruction_list(False)
 
                 self.notif(
@@ -976,7 +973,6 @@ class UICoreRos(UICore):
             self.notif(
                 translate("UICoreRos", "Failed to start edit mode."), message_type=NotifyUserRequest.ERROR)
 
-            rospy.logerr("HIDING HERE 2")
             self.hide_instruction_list(False)
 
         if self.clear_after_learning_start:
@@ -1148,9 +1144,6 @@ class UICoreRos(UICore):
             # self.clear_all()
             # self.show_program_vis()
 
-            self.ph.add_item(1, "GetReady")
-            self.clear_after_learning_started = True
-
             self.try_start_learning_service()
 
     def learning_request_cb(self, req):
@@ -1183,8 +1176,6 @@ class UICoreRos(UICore):
     def learning_request_done_evt(self, status, result):
 
         self.program_vis.learning_request_result(result.success)
-
-        rospy.logerr(self.new_instruction_id)
 
         if self.new_instruction_id == "PlaceToPose":
 
@@ -1342,14 +1333,13 @@ class UICoreRos(UICore):
 
                     self.select_instruction.setPos(
                         obj.mapFromScene(
-                            obj.x()
-                            - obj.sceneBoundingRect().width()
-                            / 2,
-                            obj.y()
-                            + obj.sceneBoundingRect().height()
-                            / 2
-                            + obj.m2pix(0.01)))
-                    self.select_instruction.setRotation(self.current_object.get_rotation())
+                            obj.x() -
+                            obj.sceneBoundingRect().width() /
+                            2,
+                            obj.y() +
+                            obj.sceneBoundingRect().height() /
+                            2 +
+                            obj.m2pix(0.03)))
 
             else:
 
@@ -1396,14 +1386,35 @@ class UICoreRos(UICore):
 
     def cursor_click(self, pos):
 
-        self.current_object = self.view
+        if self.debug:
 
-        if self.program_vis is None or self.program_vis.items_list is None:
-            rospy.logdebug("not in edit mode")
+            item = self.view.itemAt(pos[0], pos[1])
+
+            if item is None:
+
+                self.current_object = self.view
+
+                if self.program_vis is None or self.program_vis.items_list is None:
+                    rospy.logdebug("not in edit mode")
+
+                else:
+                    self.show_instructions_list(pos[0], pos[1], obj=self.current_object)
+                    self.clicked_pos = pos
+
+            else:
+
+                item.cursor_click()
 
         else:
-            self.show_instructions_list(pos[0], pos[1], obj=self.current_object)
-            self.clicked_pos = pos
+
+            self.current_object = self.view
+
+            if self.program_vis is None or self.program_vis.items_list is None:
+                rospy.logdebug("not in edit mode")
+
+            else:
+                self.show_instructions_list(pos[0], pos[1], obj=self.current_object)
+                self.clicked_pos = pos
 
     def object_selected(self, id, selected):
 
@@ -1428,7 +1439,7 @@ class UICoreRos(UICore):
                     self.current_object.y() +
                     self.current_object.sceneBoundingRect().height() /
                     2 +
-                    self.current_object.m2pix(0.01)))
+                    self.current_object.m2pix(0.03)))
             self.select_instruction.setRotation(self.current_object.get_rotation())
             return True
 
