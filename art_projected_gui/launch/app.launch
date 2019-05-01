@@ -23,14 +23,14 @@
         <param name="program_widget_pos" value="$(arg program_widget_pos)"/>
         <param name="program_build_widget_pos" value="$(arg program_build_widget_pos)"/>
     
-        <node pkg="art_projected_gui" name="app" type="app.py" output="screen"> <!-- launch-prefix="python -m cProfile -o art_projected_gui.txt"-->
+        <node pkg="art_projected_gui" name="app" type="app.py" output="screen" launch-prefix="xvfb-run"> <!-- launch-prefix="python -m cProfile -o art_projected_gui.txt"-->
 
             <!--rosparam param="cursors">["cokoliv"]</rosparam-->
 
             <param name="locale" value="$(arg locale)"/>
 
             <!-- open window with scene - for debugging purposes (can be controlled using mouse) -->
-            <param name="show_scene" value="true"/>
+            <param name="show_scene" value="false"/>
             <param name="show_touch_points" value="false"/>
 
         </node>

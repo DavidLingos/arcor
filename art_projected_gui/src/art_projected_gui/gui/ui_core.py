@@ -86,6 +86,7 @@ class UICore(QtCore.QObject):
         self.items_to_keep_timer = QtCore.QTimer()
         self.items_to_keep_timer.timeout.connect(self.items_to_keep_timer_tick)
         self.items_to_keep_timer.start(100)
+        self.debug = False
 
     def items_to_keep_timer_tick(self):
 
@@ -139,6 +140,8 @@ class UICore(QtCore.QObject):
 
     def debug_view(self):
         """Show window with scene - for debugging purposes."""
+
+        self.debug = True
 
         self.view.show()
 
