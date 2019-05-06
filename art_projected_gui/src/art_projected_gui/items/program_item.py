@@ -861,7 +861,7 @@ class ProgramItem(Item):
             if up:
                 self.items_list.set_current_idx(self.items_list.middle_item_idx - 1)
             else:
-                self.items_list.set_current_idx(self.items_list.middle_item_idx - 1)
+                self.items_list.set_current_idx(self.items_list.middle_item_idx + 1)
 
             return
 
