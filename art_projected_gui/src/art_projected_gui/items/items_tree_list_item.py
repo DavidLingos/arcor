@@ -77,8 +77,7 @@ class ItemsTreeListItem(ListItem):
                     self.items[i].set_pressed(False)
 
             if not self.visualize:
-
-                self.set_current_idx(self.selected_item_idx)
+                self.set_current_idx(self.selected_item_idx, select=True)
 
         if self.item_selected_cb is not None:
 

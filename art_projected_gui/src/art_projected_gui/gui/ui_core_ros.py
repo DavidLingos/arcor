@@ -782,11 +782,6 @@ class UICoreRos(UICore):
                 # there may be unsaved changes - let's use ProgramItem from brain
                 self.ph.set_item_msg(state.block_id, state.program_current_item)
 
-            # if self.program_vis is not None:
-            #     rospy.logdebug(self.program_vis)
-            #     self.program_vis.setVisible(True)
-            #     return
-
             self.show_program_vis()
 
         if state.block_id == 0 or state.program_current_item.id == 0:
@@ -801,9 +796,6 @@ class UICoreRos(UICore):
 
             rospy.logdebug('Got state with newer timestamp!')
             self.clear_all()
-
-            # rospy.logdebug("LEARNING VIS 2")
-            # rospy.logdebug(state)
 
             self.learning_vis(state)
 
@@ -1177,6 +1169,8 @@ class UICoreRos(UICore):
 
         self.program_vis.learning_request_result(result.success)
 
+        rospy.logerr(self.current_object)
+
         if self.new_instruction_id == "PlaceToPose":
 
             place = self.get_place(self.ph.get_name(
@@ -1243,9 +1237,10 @@ class UICoreRos(UICore):
 
     def hide_instruction_list(self, remove_current_object=True):
 
+        self.new_item_id = None
+
         if self.select_instruction is not None:
 
-            self.new_item_id = None
             self.scene.removeItem(self.select_instruction)
             self.select_instruction = None
 
@@ -1407,12 +1402,11 @@ class UICoreRos(UICore):
 
         else:
 
-            self.current_object = self.view
-
             if self.program_vis is None or self.program_vis.items_list is None:
                 rospy.logdebug("not in edit mode")
 
             else:
+                self.current_object = self.view
                 self.show_instructions_list(pos[0], pos[1], obj=self.current_object)
                 self.clicked_pos = pos
 

@@ -349,6 +349,10 @@ class ProgramHelper(object):
 
         for ref_id in msg.ref_id:
 
+            if ref_id == item_id:
+
+                continue
+
             try:
                 return self.get_pose(block_id, ref_id)
             except ProgramHelperException:
@@ -368,6 +372,10 @@ class ProgramHelper(object):
 
         for ref_id in msg.ref_id:
 
+            if ref_id == item_id:
+
+                continue
+
             try:
                 return self.get_object(block_id, ref_id)
             except ProgramHelperException:
@@ -386,6 +394,10 @@ class ProgramHelper(object):
             return msg.polygon, item_id
 
         for ref_id in msg.ref_id:
+
+            if ref_id == item_id:
+
+                continue
 
             try:
                 return self.get_polygon(block_id, ref_id)

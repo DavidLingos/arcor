@@ -398,6 +398,7 @@ class ProgramItem(Item):
             self._init_items_list()
 
         if self.item_id is not None:
+            rospy.logerr("SELECTING 5")
             self.items_list.set_current_idx(
                 self.items_map_rev[self.item_id], select=True)
 
@@ -853,6 +854,15 @@ class ProgramItem(Item):
         if self.blocks_list.selected_item_idx is None or \
                 (self.items_list is not None and
                  self.items_list.selected_item_idx is None):
+            return
+
+        if self.item_on_failure_btn.pressed or self.item_on_success_btn.pressed:
+
+            if up:
+                self.items_list.set_current_idx(self.items_list.middle_item_idx - 1)
+            else:
+                self.items_list.set_current_idx(self.items_list.middle_item_idx - 1)
+
             return
 
         if self.blocks_list.selected_item_idx is not None:
