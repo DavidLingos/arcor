@@ -1202,6 +1202,13 @@ class UICoreRos(UICore):
                 place.item_moved()
                 self.place_pose_changed(place=place)
 
+        elif (self.new_instruction_id == "PickFromFeeder" or self.new_instruction_id == "DrillPoints") and self.current_object is not None:
+            self.hide_instruction_list()
+            self.program_vis.edit_request = True
+            self.learning_request_cb(LearningRequestGoal.DONE)
+
+            return
+
         elif self.current_object is not None and isinstance(self.current_object, Item):
 
             self.current_object.cursor_click()

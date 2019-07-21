@@ -708,8 +708,7 @@ class ProgramHelper(object):
     def delete_item(self, block_id, item_id):
 
         block_idx = self._get_block_on(block_id, "idx")
-        block = self._prog.blocks[block_idx]
-        items = block.items
+        items = self._prog.blocks[block_idx].items
         item_idx = self._cache[block_id]["items"][item_id]["idx"]
 
         for i in range(0, len(items)):
