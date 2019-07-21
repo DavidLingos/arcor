@@ -12,6 +12,12 @@ rospack = rospkg.RosPack()
 icons_path = rospack.get_path('art_projected_gui') + '/icons/'
 translate = QtCore.QCoreApplication.translate
 
+"""
+    This class has been implemented during work on bachelors thesis Visual Programming of Robotics Tasks
+    Author: David Ling, xlingd00
+    Year: 2019
+"""
+
 
 class SelectInstructionItem(Item):
 

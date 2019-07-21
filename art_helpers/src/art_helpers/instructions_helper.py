@@ -188,6 +188,11 @@ class InstructionsHelper(object):
 
         return ins in self.properties.using_object | self.properties.using_polygon | self.properties.using_pose
 
+    """
+        Function below has been implemented during work on bachelors thesis Visual Programming of Robotics Tasks
+        Author: David Ling, xlingd00
+        Year: 2019
+    """
     @staticmethod
     def get_instruction_msgs(item_type, it_id,
                              on_success=None, on_failure=0, obj_type="", ref_id=[],

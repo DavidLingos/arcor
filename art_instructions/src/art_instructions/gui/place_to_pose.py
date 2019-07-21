@@ -67,6 +67,12 @@ class PlaceToPose(GuiInstruction):
 
 class PlaceToPoseLearn(PlaceToPose):
 
+    """
+        This function has been edited during work on bachelors thesis Visual Programming of Robotics Tasks
+        Author: David Ling, xlingd00
+        Year: 2019
+    """
+
     def __init__(self, *args, **kwargs):
 
         super(PlaceToPoseLearn, self).__init__(*args, **kwargs)

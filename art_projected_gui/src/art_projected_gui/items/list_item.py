@@ -138,8 +138,8 @@ class ListItem(Item):
             for idx in range(self.middle_item_idx + 1, len(self.items)):
 
                 h = self.items[idx].boundingRect().height()
-                y = self.items[idx - 1].y() + self.items[idx -
-                                                         1].boundingRect().height() + self.sp
+                y = self.items[idx - 1].y() + self.items[idx
+                                                         - 1].boundingRect().height() + self.sp
 
                 if y + h > self.down_btn.y():
                     break
@@ -160,6 +160,12 @@ class ListItem(Item):
                 self.up_btn.set_enabled(min(displayed) > 0)
                 self.down_btn.set_enabled(max(displayed) < len(self.items) - 1)
 
+    """
+        This function has been edited during work on bachelors thesis Visual Programming of Robotics Tasks
+        Author: David Ling, xlingd00
+        Year: 2019
+    """
+
     def up_btn_cb(self, btn):
 
         if self.middle_item_idx > 0:
@@ -167,6 +173,12 @@ class ListItem(Item):
 
         if self.item_moved_cb is not None:
             self.item_moved_cb(up=True)
+
+    """
+        This function has been edited during work on bachelors thesis Visual Programming of Robotics Tasks
+        Author: David Ling, xlingd00
+        Year: 2019
+    """
 
     def down_btn_cb(self, btn):
 

@@ -171,10 +171,22 @@ class ProgramListItem(Item):
         if self.program_selected_cb is not None:
             self.program_selected_cb(self.get_current_header().id, template=True)
 
+    """
+        This function has been implemented during work on bachelors thesis Visual Programming of Robotics Tasks
+        Author: David Ling, xlingd00
+        Year: 2019
+    """
+
     def create_btn_cb(self, btn):
 
         if self.program_selected_cb is not None:
             self.program_selected_cb(0, create=True)
+
+    """
+        This function has been implemented during work on bachelors thesis Visual Programming of Robotics Tasks
+        Author: David Ling, xlingd00
+        Year: 2019
+    """
 
     def delete_btn_cb(self, btn):
 

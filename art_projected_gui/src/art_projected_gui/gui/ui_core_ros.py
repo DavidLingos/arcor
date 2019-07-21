@@ -507,8 +507,8 @@ class UICoreRos(UICore):
 
         else:
 
-            rospy.logdebug("Attempt to pause/resume program in strange state: "
-                           + str(self.state_manager.state.system_state))
+            rospy.logdebug("Attempt to pause/resume program in strange state: " +
+                           str(self.state_manager.state.system_state))
             return False
 
     def cancel_cb(self):
@@ -842,8 +842,8 @@ class UICoreRos(UICore):
 
     def active_item_switched(self, block_id, item_id, read_only=True, blocks=False):
 
-        rospy.logdebug("Program ID:" + str(self.ph.get_program_id()) + ", active item ID: "
-                       + str((block_id, item_id)) + ", blocks: " + str(blocks) + ", ro: " + str(read_only))
+        rospy.logdebug("Program ID:" + str(self.ph.get_program_id()) + ", active item ID: " +
+                       str((block_id, item_id)) + ", blocks: " + str(blocks) + ", ro: " + str(read_only))
 
         if blocks:
 
@@ -904,8 +904,8 @@ class UICoreRos(UICore):
 
     def active_item_switched_for_visualization(self, block_id, item_id, read_only=True, blocks=False):
         """For HoloLens visualization. Called when clicked on specific block."""
-        rospy.logdebug("Program ID:" + str(self.ph.get_program_id()) + ", active item ID: "
-                       + str((block_id, item_id)) + ", blocks: " + str(blocks) + ", ro: " + str(read_only))
+        rospy.logdebug("Program ID:" + str(self.ph.get_program_id()) + ", active item ID: " +
+                       str((block_id, item_id)) + ", blocks: " + str(blocks) + ", ro: " + str(read_only))
 
         # self.clear_all()
 
@@ -950,6 +950,12 @@ class UICoreRos(UICore):
 
         return self.template
 
+    """
+        This function has been implemented during work on bachelors thesis Visual Programming of Robotics Tasks
+        Author: David Ling, xlingd00
+        Year: 2019
+    """
+
     def try_start_learning_service(self):
         req = ProgramIdTriggerRequest()
         req.program_id = self.ph.get_program_id()
@@ -985,8 +991,8 @@ class UICoreRos(UICore):
                 translate("UICoreRos", "Failed to store program"), temp=True, message_type=NotifyUserRequest.ERROR)
             # TODO what to do?
 
-        self.notif(translate("UICoreRos", "Program stored with ID=")
-                   + str(prog.header.id), temp=True)
+        self.notif(translate("UICoreRos", "Program stored with ID=") +
+                   str(prog.header.id), temp=True)
 
         self.last_edited_prog_id = prog.header.id
 
@@ -1005,6 +1011,12 @@ class UICoreRos(UICore):
         # temporarily set by default to true to avoid rosbridge crashing
         self.hololens_connected = True
         # self.hololens_connected = msg.data
+
+    """
+        This function has been edited during work on bachelors thesis Visual Programming of Robotics Tasks
+        Author: David Ling, xlingd00
+        Year: 2019
+    """
 
     def program_selected_cb(self, prog_id, run=False,
                             template=False, visualize=False,
@@ -1165,6 +1177,12 @@ class UICoreRos(UICore):
 
         rospy.logdebug('learning request progress: ' + str(fb.progress))
 
+    """
+        This function has been edited during work on bachelors thesis Visual Programming of Robotics Tasks
+        Author: David Ling, xlingd00
+        Year: 2019
+    """
+
     def learning_request_done_evt(self, status, result):
 
         self.program_vis.learning_request_result(result.success)
@@ -1235,6 +1253,12 @@ class UICoreRos(UICore):
             self.program_selected_cb,
             self.program_selection_changed_cb)
 
+    """
+        This function has been implemented during work on bachelors thesis Visual Programming of Robotics Tasks
+        Author: David Ling, xlingd00
+        Year: 2019
+    """
+
     def hide_instruction_list(self, remove_current_object=True):
 
         self.new_item_id = None
@@ -1247,6 +1271,12 @@ class UICoreRos(UICore):
         if remove_current_object:
             self.current_object = None
             self.new_instruction_id = None
+
+    """
+        This function has been implemented during work on bachelors thesis Visual Programming of Robotics Tasks
+        Author: David Ling, xlingd00
+        Year: 2019
+    """
 
     def show_instructions_list(self, x, y, obj=None):
 
@@ -1266,6 +1296,12 @@ class UICoreRos(UICore):
 
         # self.current_object.position[0],  # - self.current_object.boundingRect().width() / 2,
         # self.current_object.position[1],  # + self.current_object.boundingRect().height() / 2,
+
+    """
+        This function has been implemented during work on bachelors thesis Visual Programming of Robotics Tasks
+        Author: David Ling, xlingd00
+        Year: 2019
+    """
 
     def instruction_selected_cb(self):
 
@@ -1328,13 +1364,13 @@ class UICoreRos(UICore):
 
                     self.select_instruction.setPos(
                         obj.mapFromScene(
-                            obj.x() -
-                            obj.sceneBoundingRect().width() /
-                            2,
-                            obj.y() +
-                            obj.sceneBoundingRect().height() /
-                            2 +
-                            obj.m2pix(0.03)))
+                            obj.x()
+                            - obj.sceneBoundingRect().width()
+                            / 2,
+                            obj.y()
+                            + obj.sceneBoundingRect().height()
+                            / 2
+                            + obj.m2pix(0.03)))
                     self.select_instruction.setRotation(self.current_object.get_rotation())
 
             else:
@@ -1380,6 +1416,12 @@ class UICoreRos(UICore):
         self.state_manager.update_program_item(self.ph.get_program_id(
         ), self.program_vis.block_id, self.program_vis.get_current_item())
 
+    """
+        This function has been implemented during work on bachelors thesis Visual Programming of Robotics Tasks
+        Author: David Ling, xlingd00
+        Year: 2019
+    """
+
     def cursor_click(self, pos):
 
         if self.debug:
@@ -1419,6 +1461,11 @@ class UICoreRos(UICore):
                 rospy.logdebug("not in edit mode")
                 return False
 
+            """
+                This part has been implemented during work on bachelors thesis Visual Programming of Robotics Tasks
+                Author: David Ling, xlingd00
+                Year: 2019
+            """
             self.current_object = self.get_object(id)
             self.show_instructions_list(
                 self.current_object.position[0],
@@ -1428,13 +1475,13 @@ class UICoreRos(UICore):
 
             self.select_instruction.setPos(
                 self.current_object.mapFromScene(
-                    self.current_object.x() -
-                    self.current_object.sceneBoundingRect().width() /
-                    2,
-                    self.current_object.y() +
-                    self.current_object.sceneBoundingRect().height() /
-                    2 +
-                    self.current_object.m2pix(0.03)))
+                    self.current_object.x()
+                    - self.current_object.sceneBoundingRect().width()
+                    / 2,
+                    self.current_object.y()
+                    + self.current_object.sceneBoundingRect().height()
+                    / 2
+                    + self.current_object.m2pix(0.03)))
             self.select_instruction.setRotation(self.current_object.get_rotation())
             return True
 

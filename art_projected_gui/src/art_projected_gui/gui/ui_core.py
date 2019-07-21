@@ -23,6 +23,12 @@ class customGraphicsView(QtGui.QGraphicsView):
 
         self.fitInView(self.sceneRect(), QtCore.Qt.KeepAspectRatio)
 
+    """
+        This class has been edited during work on bachelors thesis Visual Programming of Robotics Tasks
+        Author: David Ling, xlingd00
+        Year: 2019
+    """
+
 
 class UICore(QtCore.QObject):
     """Class holds QGraphicsScene and its content (items).

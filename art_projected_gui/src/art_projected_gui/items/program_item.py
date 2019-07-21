@@ -634,10 +634,22 @@ class ProgramItem(Item):
         if self.item_switched_cb:
             self.item_switched_cb(self.block_id, self.item_id, blocks=False)
 
+    """
+        This function has been implemented during work on bachelors thesis Visual Programming of Robotics Tasks
+        Author: David Ling, xlingd00
+        Year: 2019
+    """
+
     def _reinit_items_list(self):
 
         self.scene().removeItem(self.items_list)
         self._init_items_list()
+
+    """
+        This function has been implemented during work on bachelors thesis Visual Programming of Robotics Tasks
+        Author: David Ling, xlingd00
+        Year: 2019
+    """
 
     def _init_instructions_list(self):
 
@@ -797,6 +809,12 @@ class ProgramItem(Item):
 
         return True
 
+    """
+        This function has been implemented during work on bachelors thesis Visual Programming of Robotics Tasks
+        Author: David Ling, xlingd00
+        Year: 2019
+    """
+
     def deselect_item(self):
 
         self.item_id = None
@@ -849,11 +867,17 @@ class ProgramItem(Item):
         if self.item_switched_cb is not None:
             self.item_switched_cb(*self.cid)
 
+    """
+        This function has been implemented during work on bachelors thesis Visual Programming of Robotics Tasks
+        Author: David Ling, xlingd00
+        Year: 2019
+    """
+
     def block_item_moved_cb(self, pos=None, up=True):
 
         if self.blocks_list.selected_item_idx is None or \
-                (self.items_list is not None and
-                 self.items_list.selected_item_idx is None):
+                (self.items_list is not None
+                 and self.items_list.selected_item_idx is None):
             return
 
         if self.item_on_failure_btn.pressed or self.item_on_success_btn.pressed:
@@ -897,6 +921,12 @@ class ProgramItem(Item):
 
         self.set_active(self.ph.get_block_on_success(self.block_id), None)
 
+    """
+        This function has been implemented during work on bachelors thesis Visual Programming of Robotics Tasks
+        Author: David Ling, xlingd00
+        Year: 2019
+    """
+
     def block_create_btn_cb(self, btn):
 
         self.ph.add_block(self.block_id)
@@ -906,6 +936,12 @@ class ProgramItem(Item):
         self._init_blocks_list()
 
         return
+
+    """
+        This function has been implemented during work on bachelors thesis Visual Programming of Robotics Tasks
+        Author: David Ling, xlingd00
+        Year: 2019
+    """
 
     def block_delete_btn_cb(self, btn):
 
@@ -981,12 +1017,24 @@ class ProgramItem(Item):
         self.item_on_success_clicked = not self.item_on_success_clicked
         self.item_on_success_btn.set_pressed(self.item_on_success_clicked)
 
+    """
+        This function has been implemented during work on bachelors thesis Visual Programming of Robotics Tasks
+        Author: David Ling, xlingd00
+        Year: 2019
+    """
+
     def item_create_btn_cb(self, btn):
 
         self.setVisible(False)
         self._init_instructions_list()
 
         return
+
+    """
+        This function has been implemented during work on bachelors thesis Visual Programming of Robotics Tasks
+        Author: David Ling, xlingd00
+        Year: 2019
+    """
 
     def item_delete_btn_cb(self, btn):
 
@@ -999,6 +1047,12 @@ class ProgramItem(Item):
 
         return
 
+    """
+        This function has been implemented during work on bachelors thesis Visual Programming of Robotics Tasks
+        Author: David Ling, xlingd00
+        Year: 2019
+    """
+
     def item_tree_btn_cb(self, btn):
 
         group_visible(self.item_btns, False)
@@ -1007,6 +1061,12 @@ class ProgramItem(Item):
         self.show_background = False
         self.update()
         return
+
+    """
+        This function has been implemented during work on bachelors thesis Visual Programming of Robotics Tasks
+        Author: David Ling, xlingd00
+        Year: 2019
+    """
 
     def item_tree_visualization_finished(self):
 
@@ -1017,10 +1077,22 @@ class ProgramItem(Item):
         self.title.setVisible(True)
         return
 
+    """
+        This function has been implemented during work on bachelors thesis Visual Programming of Robotics Tasks
+        Author: David Ling, xlingd00
+        Year: 2019
+    """
+
     def instruction_selected_cb(self):
 
         instruction_id = self.select_instruction.selected_instruction_id
         self.handle_new_instruction(instruction_id)
+
+    """
+        This function has been implemented during work on bachelors thesis Visual Programming of Robotics Tasks
+        Author: David Ling, xlingd00
+        Year: 2019
+    """
 
     def handle_new_instruction(self, instruction_id):
 
@@ -1236,8 +1308,8 @@ class ProgramItem(Item):
         for idx, item_id in self.items_map.iteritems():
 
             if self.ph.item_learned(block_id, item_id) or \
-                    (self.ph.get_item_msg(block_id, item_id).type in self.ih.properties.runnable_during_learning
-                     and not self.ih.requires_learning(self.ph.get_item_msg(block_id, item_id).type)):
+                    (self.ph.get_item_msg(block_id, item_id).type in self.ih.properties.runnable_during_learning and
+                     not self.ih.requires_learning(self.ph.get_item_msg(block_id, item_id).type)):
                 self.items_list.items[idx].set_background_color()
             else:
                 self.items_list.items[idx].set_background_color(QtCore.Qt.red)

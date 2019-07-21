@@ -546,6 +546,12 @@ class ProgramHelper(object):
 
         return True
 
+    """
+        Functions below has been implemented during work on bachelors thesis Visual Programming of Robotics Tasks
+        Author: David Ling, xlingd00
+        Year: 2019
+    """
+
     def is_empty(self):
 
         for block_idx in range(0, len(self._prog.blocks)):

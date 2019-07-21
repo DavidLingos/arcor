@@ -15,6 +15,12 @@ from art_projected_gui.helpers import conversions
 
 translate = QtCore.QCoreApplication.translate
 
+"""
+    This class has been edited during work on bachelors thesis Visual Programming of Robotics Tasks
+    Author: David Ling, xlingd00
+    Year: 2019
+"""
+
 
 class ObjectItem(Item):
 
@@ -80,13 +86,13 @@ class ObjectItem(Item):
             # the (possibly rotated) object bounding box (highlight area)
             self.desc.setPos(
                 self.mapFromScene(
-                    self.x() -
-                    self.sceneBoundingRect().width() /
-                    2,
-                    self.y() +
-                    self.sceneBoundingRect().height() /
-                    2 +
-                    self.m2pix(0.01)))
+                    self.x()
+                    - self.sceneBoundingRect().width()
+                    / 2,
+                    self.y()
+                    + self.sceneBoundingRect().height()
+                    / 2
+                    + self.m2pix(0.01)))
 
     def set_pos(self, x, y, z=None, parent_coords=False):
 

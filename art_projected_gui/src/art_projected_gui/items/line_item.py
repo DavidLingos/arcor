@@ -5,6 +5,12 @@ from PyQt4 import QtGui, QtCore
 from item import Item
 import rospkg
 
+"""
+    This class been implemented during work on bachelors thesis Visual Programming of Robotics Tasks
+    Author: David Ling, xlingd00
+    Year: 2019
+"""
+
 
 class LineItem(Item):
 

@@ -6,6 +6,12 @@ from item import Item
 
 translate = QtCore.QCoreApplication.translate
 
+"""
+    This class has been edited during work on bachelors thesis Visual Programming of Robotics Tasks
+    Author: David Ling, xlingd00
+    Year: 2019
+"""
+
 
 class ButtonItem(Item):
 
@@ -191,5 +197,5 @@ class ButtonItem(Item):
 
             else:
 
-                painter.drawText(text_rect, QtCore.Qt.AlignLeft |
-                                 QtCore.Qt.AlignTop | QtCore.Qt.TextWordWrap, self.caption)
+                painter.drawText(text_rect, QtCore.Qt.AlignLeft
+                                 | QtCore.Qt.AlignTop | QtCore.Qt.TextWordWrap, self.caption)
