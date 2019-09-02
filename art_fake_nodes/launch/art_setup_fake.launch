@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<launch>
+    <machine name="localhost" address="localhost" default="true" />
+    <arg name="machine" default="localhost"/>
+
+    <include file="$(find art_instructions)/launch/upload.launch"></include>
+    <include file="$(find art_projected_gui)/launch/upload_plugins.launch"></include>
+    <node pkg="art_fake_nodes" type="visual_inspection.py" output="screen" name="fake_visual_inspection" machine="$(arg machine)" />
+    <node pkg="art_fake_nodes" type="calibration.py" output="screen" name="fake_calibration" machine="$(arg machine)" />
+    <node pkg="art_fake_nodes" type="tracker.py" output="screen" name="fake_tracker" machine="$(arg machine)" />
+    <include file="$(find art_sound)/launch/node.launch"></include>
+    <include file="$(find art_debug_arm)/launch/bringup.launch"></include>
+    <include file="$(find art_bringup)/launch/bringup.launch"></include>
+    <include file="$(find art_projected_gui)/launch/app.launch"></include>
+</launch>
