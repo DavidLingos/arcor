@@ -252,7 +252,7 @@ class ProgramHelper(object):
 
     def set_item_msg(self, block_id, msg):
 
-        if len(self._cache[block_id]["items"]) < msg.id:
+        if not self._cache.get(block_id) or len(self._cache[block_id]["items"]) < msg.id:
             return
         block_idx = self._cache[block_id]["idx"]
         item_idx = self._cache[block_id]["items"][msg.id]["idx"]
