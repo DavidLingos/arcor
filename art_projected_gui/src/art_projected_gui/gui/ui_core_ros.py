@@ -92,6 +92,7 @@ class UICoreRos(UICore):
         self.clicked_pos = [0, 0]
         self.new_item_id = None
         self.new_instruction_id = None
+        self.is_learning = False
 
         self.ph = ProgramHelper()
 
@@ -893,6 +894,8 @@ class UICoreRos(UICore):
 
         if None not in (block_id, item_id):
 
+            self.hide_instruction_list(False)
+
             self.clear_all()  # TODO melo by se zavolat i pri odvybrani instrukce!
 
             self.state_manager.update_program_item(
@@ -1153,11 +1156,13 @@ class UICoreRos(UICore):
     def learning_request_cb(self, req):
 
         if req == LearningRequestGoal.GET_READY:
+            self.is_learning = True
             self.notif(
                 translate("UICoreRos", "Robot is getting ready for learning"))
             pass
         elif req == LearningRequestGoal.DONE:
 
+            self.is_learning = False
             self.notif(translate("UICoreRos", "Robot is getting into default state"))
 
             if self.current_instruction is not None:
@@ -1186,8 +1191,6 @@ class UICoreRos(UICore):
     def learning_request_done_evt(self, status, result):
 
         self.program_vis.learning_request_result(result.success)
-
-        rospy.logerr(self.current_object)
 
         if self.new_instruction_id == "PlaceToPose":
 
@@ -1454,6 +1457,9 @@ class UICoreRos(UICore):
 
             if self.program_vis is None or self.program_vis.items_list is None:
                 rospy.logdebug("not in edit mode")
+
+            elif self.is_learning:
+                rospy.logdebug("Finish learning of current instruction")
 
             else:
                 self.current_object = self.view
